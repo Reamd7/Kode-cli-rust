@@ -1,0 +1,38 @@
+[package]
+name = "kode-ui"
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+license.workspace = true
+repository.workspace = true
+rust-version.workspace = true
+
+[dependencies]
+# Core
+kode-core = { workspace = true }
+kode-tools = { workspace = true }
+kode-services = { workspace = true }
+
+# Async
+tokio = { workspace = true }
+
+# TUI
+ratatui = { workspace = true }
+crossterm = { workspace = true }
+tui-input = { workspace = true }
+
+# Serialization
+serde = { workspace = true }
+
+# Error handling
+anyhow = { workspace = true }
+
+# Syntax highlighting (optional)
+syntect = { workspace = true, optional = true }
+
+[features]
+default = []
+syntax-highlighting = ["syntect"]
+
+[dev-dependencies]
+tokio = { workspace = true, features = ["test-util"] }

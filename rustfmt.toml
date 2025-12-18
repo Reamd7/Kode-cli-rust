@@ -1,0 +1,28 @@
+# Rustfmt 配置
+
+# 版本
+edition = "2021"
+
+# 最大行宽
+max_width = 100
+
+# 硬标签宽度
+hard_tabs = false
+tab_spaces = 4
+
+# 导入格式化
+imports_granularity = "Crate"
+group_imports = "StdExternalCrate"
+
+# 注释格式化
+wrap_comments = true
+comment_width = 80
+
+# 链式调用
+chain_width = 60
+
+# 函数参数
+fn_args_layout = "Tall"
+
+# 结构体格式化
+struct_field_align_threshold = 20

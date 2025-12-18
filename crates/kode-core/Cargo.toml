@@ -1,0 +1,39 @@
+[package]
+name = "kode-core"
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+license.workspace = true
+repository.workspace = true
+rust-version.workspace = true
+
+[dependencies]
+# Async
+tokio = { workspace = true }
+async-trait = { workspace = true }
+futures = { workspace = true }
+
+# Serialization
+serde = { workspace = true }
+serde_json = { workspace = true }
+serde_yaml = { workspace = true }
+
+# Error handling
+anyhow = { workspace = true }
+
+# Configuration
+directories = { workspace = true }
+
+# Parsing
+pulldown-cmark = { workspace = true }
+yaml-rust2 = { workspace = true }
+
+# Caching
+lru = { workspace = true }
+
+# Utilities
+chrono = { workspace = true }
+once_cell = { workspace = true }
+
+[dev-dependencies]
+tokio = { workspace = true, features = ["test-util"] }

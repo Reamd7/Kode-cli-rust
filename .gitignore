@@ -1,0 +1,45 @@
+# Rust
+/target/
+**/*.rs.bk
+*.pdb
+Cargo.lock
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# OS
+Thumbs.db
+
+# Configuration (may contain secrets)
+.kode.json
+.env
+
+# Logs
+*.log
+debug.log
+trace.log
+
+# Test fixtures (可选，如果不想提交测试数据)
+# test_fixtures/*.json
+
+# Build artifacts
+dist/
+build/
+
+# Documentation
+target/doc/
+
+# Coverage reports
+coverage/
+tarpaulin-report.html
+cobertura.xml
+*.profraw
+*.profdata
+
+# Benchmarks
+target/criterion/

@@ -1,0 +1,7 @@
+# Clippy 配置
+
+# 认知复杂度阈值
+cognitive-complexity-threshold = 30
+
+# 类型复杂度阈值
+type-complexity-threshold = 250

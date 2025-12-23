@@ -9,7 +9,11 @@
       "Bash(npx openspec validate:*)",
       "Bash(npx openspec:*)",
       "Bash(chmod:*)",
-      "Bash(/Users/gemini/Documents/backup/Kode-cli-rust/scripts/verify-migration.sh:*)"
+      "Bash(/Users/gemini/Documents/backup/Kode-cli-rust/scripts/verify-migration.sh:*)",
+      "Bash(/Users/gemini/Documents/backup/Kode-cli-rust/scripts/verify-migration-full.sh)",
+      "Bash(cargo doc:*)",
+      "Bash(tree:*)",
+      "Bash(git add:*)"
     ]
   },
   "statusLine": {

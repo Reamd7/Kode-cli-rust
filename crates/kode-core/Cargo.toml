@@ -20,9 +20,11 @@ serde_yaml = { workspace = true }
 
 # Error handling
 anyhow = { workspace = true }
+thiserror = { workspace = true }
 
 # Configuration
 directories = { workspace = true }
+dirs = { workspace = true }
 
 # Parsing
 pulldown-cmark = { workspace = true }
@@ -34,6 +36,9 @@ lru = { workspace = true }
 # Utilities
 chrono = { workspace = true }
 once_cell = { workspace = true }
+rand = { workspace = true }
 
 [dev-dependencies]
 tokio = { workspace = true, features = ["test-util"] }
+thiserror = { workspace = true }
+tempfile = { workspace = true }

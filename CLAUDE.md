@@ -1,3 +1,22 @@
+<!-- OPENSPEC:START -->
+# OpenSpec Instructions
+
+These instructions are for AI assistants working in this project.
+
+Always open `@/openspec/AGENTS.md` when the request:
+- Mentions planning or proposals (words like proposal, spec, change, plan)
+- Introduces new capabilities, breaking changes, architecture shifts, or big performance/security work
+- Sounds ambiguous and you need the authoritative spec before coding
+
+Use `@/openspec/AGENTS.md` to learn:
+- How to create and apply change proposals
+- Spec format and conventions
+- Project structure and guidelines
+
+Keep this managed block so 'openspec update' can refresh the instructions.
+
+<!-- OPENSPEC:END -->
+
 # CLAUDE.md - AI Agent 工作指南
 
 本文档为 AI Agent（包括 Claude Code）提供明确的工作指导，确保开发过程高效、规范。
@@ -501,3 +520,4 @@ cargo test --test integration_tests
 4. **记录进度** - TODO.md 实时更新
 
 让我们一起构建高质量的 Kode-Rust！🦀
+

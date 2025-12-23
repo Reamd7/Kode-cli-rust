@@ -12,6 +12,37 @@ MCP 集成计划在 `crates/kode-services/src/mcp_client.rs` 中实现，尚未�
 
 MCP integration is planned to be implemented in `crates/kode-services/src/mcp_client.rs`, implementation has not started yet.
 
+## TypeScript 版本参考 / TypeScript Version Reference
+
+在实现本设计时，请参考原版 TypeScript 项目中的以下文件：
+
+When implementing this design, refer to the following files in the original TypeScript project:
+
+### MCP 客户端核心 / MCP Client Core
+- **MCP 客户端**: `/Users/gemini/Documents/backup/Kode-cli/src/services/mcpClient.ts`
+  - MCP 服务器连接管理 (第 1-500 行)
+  - `getMCPTools()` - 获取 MCP 工具
+  - `addMcpServer()` - 添加 MCP 服务器
+  - `removeMcpServer()` - 移除 MCP 服务器
+  - STDIO 和 SSE 传输实现
+
+### MCP 工具 / MCP Tool
+- **MCP 工具包装**: `/Users/gemini/Documents/backup/Kode-cli/src/tools/MCPTool/MCPTool.ts`
+  - MCP 工具包装类
+  - 工具调用转发
+  - 错误处理
+
+### MCP 配置 / MCP Configuration
+- **配置类型**: `/Users/gemini/Documents/backup/Kode-cli/src/utils/config.ts`
+  - `McpServerConfig` - 配置类型定义
+  - `parseEnvVars()` - 环境变量解析
+
+### 实现细节 / Implementation Details
+1. **传输协议**: STDIO (子进程) 和 SSE (HTTP)
+2. **JSON-RPC**: 基于 JSON-RPC 2.0 协议
+3. **工具命名**: `mcp_<server>_<tool>` 格式
+4. **配置来源**: global、project、.mcprc
+
 ## Goals / Non-Goals
 
 ### Goals

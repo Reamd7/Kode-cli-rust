@@ -12,6 +12,33 @@ Agent 系统计划在 `crates/kode-core/src/agent/` 中实现，尚未开始实�
 
 The Agent system is planned to be implemented in `crates/kode-core/src/agent/`, implementation has not started yet.
 
+## TypeScript 版本参考 / TypeScript Version Reference
+
+在实现本设计时，请参考原版 TypeScript 项目中的以下文件：
+
+When implementing this design, refer to the following files in the original TypeScript project:
+
+### Agent 管理 / Agent Management
+- **Agent 工具**: `/Users/gemini/Documents/backup/Kode-cli/src/utils/agents.ts`
+  - Agent 加载和解析逻辑
+  - YAML frontmatter 处理
+  - 五层加载优先级实现
+
+### Agent 目录结构 / Agent Directory Structure
+- **内置 Agents**: `/Users/gemini/Documents/backup/Kode-cli/src/built-in-agents/`
+- **用户 Agents**:
+  - `~/.claude/agents/`
+  - `~/.kode/agents/`
+- **项目 Agents**:
+  - `./.claude/agents/`
+  - `./.kode/agents/`
+
+### 实现细节 / Implementation Details
+1. **YAML 解析**: 使用 frontmatter 格式解析 Agent 元数据
+2. **加载优先级**: 内置 -> 全局 Claude -> 全局 Kode -> 项目 Claude -> 项目 Kode
+3. **工具过滤**: 支持 "all" 或工具名称数组
+4. **缓存策略**: 使用 LRU 缓存避免重复加载
+
 ## Goals / Non-Goals
 
 ### Goals

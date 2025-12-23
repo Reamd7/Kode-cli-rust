@@ -257,6 +257,50 @@ Every requirement MUST have at least one scenario.
 ### Requirement Wording
 - Use SHALL/MUST for normative requirements (avoid should/may unless intentionally non-normative)
 
+### Reference Section (Kode-Rust Specific)
+
+For Kode-Rust project, all spec.md files MUST include a Reference section at the end, before Non-Goals:
+
+```markdown
+## Reference / 参考资料
+
+### TypeScript 版本实现参考 / TypeScript Implementation Reference
+
+在实现本规范时，请参考原版 TypeScript 项目中的以下文件：
+
+When implementing this specification, refer to the following files in the original TypeScript project:
+
+#### [Module Name in Chinese] / [Module Name in English]
+- **[File/Component]**: `/Users/gemini/Documents/backup/Kode-cli/src/path/to/file.ts`
+  - [Function/Feature 1] - Brief description
+  - [Function/Feature 2] - Brief description
+
+### 实现要点 / Implementation Notes
+
+1. **[Key Point 1]**: [Description]
+2. **[Key Point 2]**: [Description]
+```
+
+For design.md files, add the TypeScript Version Reference section after the Context section:
+
+```markdown
+## TypeScript 版本参考 / TypeScript Version Reference
+
+在实现本设计时，请参考原版 TypeScript 项目中的以下文件：
+
+When implementing this design, refer to the following files in the original TypeScript project:
+
+### [Module Name] / [Module Name]
+- **[File/Component]**: `/Users/gemini/Documents/backup/Kode-cli/src/path/to/file.ts`
+  - [Key implementation details]
+
+### 实现细节 / Implementation Details
+1. **[Detail 1]**: [Description]
+2. **[Detail 2]**: [Description]
+```
+
+**Purpose**: Ensure all implementations reference the original TypeScript codebase for compatibility and understanding.
+
 ### Delta Operations
 
 - `## ADDED Requirements` - New capabilities

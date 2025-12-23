@@ -6,6 +6,31 @@
 
 The configuration system is a foundational component of Kode-Rust, responsible for loading configuration from the file system and maintaining compatibility with the TypeScript version.
 
+## TypeScript 版本参考 / TypeScript Version Reference
+
+在实现本设计时，请参考原版 TypeScript 项目中的以下文件：
+
+When implementing this design, refer to the following files in the original TypeScript project:
+
+### 核心配置实现 / Core Configuration Implementation
+- **配置加载**: `/Users/gemini/Documents/backup/Kode-cli/src/utils/config.ts` (1-500 行)
+  - `getGlobalConfig()` - 全局配置加载逻辑
+  - `getCurrentProjectConfig()` - 项目配置加载逻辑
+  - `saveGlobalConfig()` / `saveCurrentProjectConfig()` - 配置保存
+  - `mergeConfigs()` - 配置合并策略
+
+### 配置类型定义 / Configuration Type Definitions
+- **配置类型**: `/Users/gemini/Documents/backup/Kode-cli/src/utils/config.ts`
+  - `ProjectConfig` interface (第 28-47 行)
+  - `McpServerConfig` type (第 14-26 行)
+  - `DEFAULT_PROJECT_CONFIG` (第 49-60 行)
+
+### 实现细节 / Implementation Details
+1. **配置字段命名**: TypeScript 版本使用 camelCase
+2. **配置合并策略**: 项目配置覆盖全局配置
+3. **默认值处理**: 配置文件不存在时返回默认值
+4. **错误处理**: 使用 `ConfigParseError` 处理解析错误
+
 ## Goals / Non-Goals
 
 ### Goals

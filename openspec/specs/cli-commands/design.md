@@ -12,6 +12,35 @@ CLI 命令计划在 `crates/kode-cli/src/` 中实现，尚未开始实现。
 
 The CLI commands are planned to be implemented in `crates/kode-cli/src/`, implementation has not started yet.
 
+## TypeScript 版本参考 / TypeScript Version Reference
+
+在实现本设计时，请参考原版 TypeScript 项目中的以下文件：
+
+When implementing this design, refer to the following files in the original TypeScript project:
+
+### CLI 结构 / CLI Structure
+- **命令定义**: `/Users/gemini/Documents/backup/Kode-cli/src/commands.ts`
+  - 命令注册和处理
+  - 命令参数解析
+
+### 命令实现 / Command Implementations
+- **命令目录**: `/Users/gemini/Documents/backup/Kode-cli/src/commands/`
+  - 所有 CLI 命令实现
+  - 参数验证
+  - 执行逻辑
+
+### 入口点 / Entry Points
+- **应用入口**: `/Users/gemini/Documents/backup/Kode-cli/src/entrypoints/`
+  - CLI 入口点
+  - 命令行参数解析
+  - 应用初始化
+
+### 实现细节 / Implementation Details
+1. **命令解析**: 使用命令行参数解析库（如 clap）
+2. **错误处理**: 清晰的错误信息
+3. **帮助文档**: 详细的命令帮助
+4. **配置交互**: 与配置系统交互
+
 ## Goals / Non-Goals
 
 ### Goals

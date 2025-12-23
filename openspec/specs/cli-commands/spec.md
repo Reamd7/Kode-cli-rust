@@ -166,6 +166,39 @@ The system SHALL provide a command to display version information.
 - **THEN** display the Kode version number
 - **AND** display build information (if applicable)
 
+## Reference / 参考资料
+
+### TypeScript 版本实现参考 / TypeScript Implementation Reference
+
+在实现本规范时，请参考原版 TypeScript 项目中的以下文件：
+
+When implementing this specification, refer to the following files in the original TypeScript project:
+
+#### CLI 命令系统 / CLI Command System
+- **命令定义**: `/Users/gemini/Documents/backup/Kode-cli/src/commands.ts`
+  - 命令注册和处理
+  - 命令参数解析
+
+#### 命令实现 / Command Implementations
+- **命令目录**: `/Users/gemini/Documents/backup/Kode-cli/src/commands/`
+  - 所有 CLI 命令的实现
+  - 参数验证和处理
+  - 命令执行逻辑
+
+#### 入口点 / Entry Points
+- **应用入口**: `/Users/gemini/Documents/backup/Kode-cli/src/entrypoints/`
+  - CLI 入口点
+  - 命令行参数解析
+  - 应用初始化
+
+### 实现要点 / Implementation Notes
+
+1. **命令解析**: 使用命令行参数解析库（如 clap）
+2. **错误处理**: 命令执行失败时提供清晰的错误信息
+3. **帮助信息**: 为每个命令提供详细的帮助文档
+4. **配置交互**: 命令需要与配置系统交互
+5. **输出格式**: 保持与 TypeScript 版本一致的输出格式
+
 ## Non-Goals
 
 - 本规范不包含交互式 TUI 命令（在 tui-interface 规范中）

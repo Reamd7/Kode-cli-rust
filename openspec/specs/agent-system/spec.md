@@ -112,6 +112,37 @@ The system SHALL execute agents with their specific configuration.
 - **WHEN** an Agent defines a specific model
 - **THEN** use the specified model instead of the default
 
+## Reference / 参考资料
+
+### TypeScript 版本实现参考 / TypeScript Implementation Reference
+
+在实现本规范时，请参考原版 TypeScript 项目中的以下文件：
+
+When implementing this specification, refer to the following files in the original TypeScript project:
+
+#### Agent 管理模块 / Agent Management Module
+- **Agent 加载与解析**: `/Users/gemini/Documents/backup/Kode-cli/src/utils/agents.ts`
+  - Agent 定义解析逻辑
+  - YAML frontmatter 处理
+  - 五层加载优先级实现
+
+#### Agent 目录结构 / Agent Directory Structure
+- **内置 Agents**: `/Users/gemini/Documents/backup/Kode-cli/src/built-in-agents/`
+- **用户 Agents**: `~/.claude/agents/` 和 `~/.kode/agents/`
+- **项目 Agents**: `./.claude/agents/` 和 `./.kode/agents/`
+
+#### Agent 类型定义 / Agent Type Definitions
+- **Agent 接口**: `/Users/gemini/Documents/backup/Kode-cli/src/types/`
+  - Agent 元数据结构
+  - Agent 工具过滤器类型
+
+### 实现要点 / Implementation Notes
+
+1. **YAML 解析**: TypeScript 版本使用 frontmatter 解析 Agent 的 YAML 元数据
+2. **五层加载**: 内置 -> 全局 Claude -> 全局 Kode -> 项目 Claude -> 项目 Kode
+3. **工具过滤**: 支持 "all" 字符串或工具名称数组
+4. **缓存策略**: 使用 LRU 缓存避免重复加载
+
 ## Non-Goals
 
 - 本规范不包含 Agent 的热重载

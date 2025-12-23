@@ -12,6 +12,40 @@ TUI 界面计划在 `crates/kode-ui/` 中实现，尚未开始实现。
 
 The TUI interface is planned to be implemented in `crates/kode-ui/`, implementation has not started yet.
 
+## TypeScript 版本参考 / TypeScript Version Reference
+
+在实现本设计时，请参考原版 TypeScript 项目中的以下文件：
+
+When implementing this design, refer to the following files in the original TypeScript project:
+
+### TUI 组件 / TUI Components
+- **组件目录**: `/Users/gemini/Documents/backup/Kode-cli/src/components/`
+  - 所有 TUI 组件实现
+  - 组件状态管理
+  - 用户交互处理
+
+### TUI 屏幕 / TUI Screens
+- **屏幕目录**: `/Users/gemini/Documents/backup/Kode-cli/src/screens/`
+  - 不同应用屏幕实现
+  - 屏幕导航和切换
+
+### UI 上下文 / UI Context
+- **上下文管理**: `/Users/gemini/Documents/backup/Kode-cli/src/context.ts`
+  - UI 状态管理
+  - 组件间通信
+
+### 渲染和布局 / Rendering and Layout
+- **渲染组件**: `/Users/gemini/Documents/backup/Kode-cli/src/components/`
+  - 终端渲染
+  - 响应式布局
+  - 动画和过渡
+
+### 实现细节 / Implementation Details
+1. **TUI 库**: Rust 使用 Ratatui，TS 使用 Ink
+2. **响应式**: 适应不同终端尺寸
+3. **键盘交互**: 处理键盘输入和快捷键
+4. **性能优化**: 流式渲染性能考虑
+
 ## Goals / Non-Goals
 
 ### Goals

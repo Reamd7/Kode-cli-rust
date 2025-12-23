@@ -149,6 +149,49 @@ The system SHALL load MCP server configuration from the application config.
 - **THEN** automatically register the server's tools to ToolRegistry
 - **AND** use a tool name prefix to identify the server
 
+## Reference / 参考资料
+
+### TypeScript 版本实现参考 / TypeScript Implementation Reference
+
+在实现本规范时，请参考原版 TypeScript 项目中的以下文件：
+
+When implementing this specification, refer to the following files in the original TypeScript project:
+
+#### MCP 客户端核心 / MCP Client Core
+- **MCP 客户端**: `/Users/gemini/Documents/backup/Kode-cli/src/services/mcpClient.ts`
+  - MCP 服务器连接管理
+  - STDIO 和 SSE 传输支持
+  - 工具发现和调用
+  - `getMCPTools()` - 获取所有 MCP 工具
+  - `addMcpServer()` - 添加 MCP 服务器
+  - `removeMcpServer()` - 移除 MCP 服务器
+
+#### MCP 工具实现 / MCP Tool Implementation
+- **MCP 工具**: `/Users/gemini/Documents/backup/Kode-cli/src/tools/MCPTool/MCPTool.ts`
+  - MCP 工具包装类
+  - 工具调用转发到 MCP 服务器
+  - 错误处理和结果转换
+
+#### MCP 配置 / MCP Configuration
+- **MCP 配置类型**: `/Users/gemini/Documents/backup/Kode-cli/src/utils/config.ts`
+  - `McpServerConfig` - MCP 服务器配置类型
+  - `McpStdioServerConfig` - STDIO 服务器配置
+  - `McpSSEServerConfig` - SSE 服务器配置
+  - 环境变量解析: `parseEnvVars()`
+
+#### MCP 批准机制 / MCP Approval Mechanism
+- **MCP 服务器批准**: `/Users/gemini/Documents/backup/Kode-cli/src/services/mcpServerApproval.tsx`
+  - 用户批准流程
+  - 服务器信任管理
+
+### 实现要点 / Implementation Notes
+
+1. **传输协议**: 支持 STDIO（子进程）和 SSE（HTTP）两种传输方式
+2. **JSON-RPC**: MCP 协议基于 JSON-RPC 2.0
+3. **工具命名**: MCP 工具使用 `mcp_<server>_<tool>` 格式命名
+4. **生命周期**: MCP 服务器在需要时启动，空闲时关闭
+5. **配置合并**: MCP 服务器配置可以从 global、project、.mcprc 三个来源加载
+
 ## Non-Goals
 
 - 本规范不包含 MCP 服务器的实现

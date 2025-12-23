@@ -16,6 +16,42 @@ The skeleton for message and model modules has been created, but specific featur
 - `crates/kode-core/src/model/mod.rs` - 模型抽象（待实现）/ Model abstraction (to be implemented)
 - `crates/kode-core/src/context/mod.rs` - 上下文管理（待实现）/ Context management (to be implemented)
 
+## TypeScript 版本参考 / TypeScript Version Reference
+
+在实现本设计时，请参考原版 TypeScript 项目中的以下文件：
+
+When implementing this design, refer to the following files in the original TypeScript project:
+
+### 消息类型定义 / Message Type Definitions
+- **消息类型**: `/Users/gemini/Documents/backup/Kode-cli/src/types/conversation.ts`
+  - `Message` - 消息联合类型
+  - `UserMessage` - 用户消息
+  - `AssistantMessage` - 助手消息
+  - `ProgressMessage` - 进度消息
+
+### 查询处理 / Query Processing
+- **查询模块**: `/Users/gemini/Documents/backup/Kode-cli/src/query.ts`
+  - 消息构建和发送
+  - 工具调用处理
+  - 流式响应处理
+  - 上下文管理
+
+### 模型适配器 / Model Adapters
+- **适配器工厂**: `/Users/gemini/Documents/backup/Kode-cli/src/services/modelAdapterFactory.ts`
+  - 模型提供商选择
+  - 适配器实例化
+
+- **适配器实现**: `/Users/gemini/Documents/backup/Kode-cli/src/services/adapters/`
+  - Anthropic 适配器
+  - OpenAI 适配器
+  - 其他提供商适配器
+
+### 实现细节 / Implementation Details
+1. **消息格式**: 遵循 Anthropic Messages API 格式
+2. **工具调用**: `tool_use` 和 `tool_result` 内容块
+3. **流式处理**: 支持 SSE 流式响应
+4. **多提供商**: 支持多个 AI 提供商
+
 ## Goals / Non-Goals
 
 ### Goals

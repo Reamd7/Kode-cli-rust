@@ -12,6 +12,57 @@ The tool system is one of the core features of Kode-Rust, allowing AI agents to 
 
 The tool system is planned to be implemented in `crates/kode-tools/`, implementation has not started yet.
 
+## TypeScript 版本参考 / TypeScript Version Reference
+
+在实现本设计时，请参考原版 TypeScript 项目中的以下文件：
+
+When implementing this design, refer to the following files in the original TypeScript project:
+
+### 工具系统核心 / Tool System Core
+- **Tool 基类**: `/Users/gemini/Documents/backup/Kode-cli/src/Tool.ts`
+  - Tool 抽象类定义
+  - 工具接口方法: `name`, `description`, `parameters`, `execute`
+  - 权限检查: `requiresPermission()`
+
+- **工具注册表**: `/Users/gemini/Documents/backup/Kode-cli/src/tools.ts`
+  - `getAllTools()` - 获取所有可用工具
+  - `getTools()` - 获取启用的工具（含 MCP）
+  - `getReadOnlyTools()` - 获取只读工具
+
+### 内置工具实现 / Built-in Tool Implementations
+
+#### 文件操作工具 / File Operation Tools
+- **FileReadTool**: `/Users/gemini/Documents/backup/Kode-cli/src/tools/FileReadTool/`
+- **FileWriteTool**: `/Users/gemini/Documents/backup/Kode-cli/src/tools/FileWriteTool/`
+- **FileEditTool**: `/Users/gemini/Documents/backup/Kode-cli/src/tools/FileEditTool/`
+- **MultiEditTool**: `/Users/gemini/Documents/backup/Kode-cli/src/tools/MultiEditTool/`
+
+#### 搜索工具 / Search Tools
+- **GrepTool**: `/Users/gemini/Documents/backup/Kode-cli/src/tools/GrepTool/`
+- **GlobTool**: `/Users/gemini/Documents/backup/Kode-cli/src/tools/GlobTool/`
+- **LSTool**: `/Users/gemini/Documents/backup/Kode-cli/src/tools/lsTool/`
+
+#### 命令执行工具 / Command Execution Tool
+- **BashTool**: `/Users/gemini/Documents/backup/Kode-cli/src/tools/BashTool/BashTool.ts`
+
+#### 任务委托工具 / Task Delegation Tool
+- **TaskTool**: `/Users/gemini/Documents/backup/Kode-cli/src/tools/TaskTool/TaskTool.ts`
+
+#### 其他工具 / Other Tools
+- **ThinkTool**: `/Users/gemini/Documents/backup/Kode-cli/src/tools/ThinkTool/`
+- **TodoWriteTool**: `/Users/gemini/Documents/backup/Kode-cli/src/tools/TodoWriteTool/`
+- **WebSearchTool**: `/Users/gemini/Documents/backup/Kode-cli/src/tools/WebSearchTool/`
+- **URLFetcherTool**: `/Users/gemini/Documents/backup/Kode-cli/src/tools/URLFetcherTool/`
+- **SkillTool**: `/Users/gemini/Documents/backup/Kode-cli/src/tools/SkillTool/`
+- **ArchitectTool**: `/Users/gemini/Documents/backup/Kode-cli/src/tools/ArchitectTool/`
+
+### 实现细节 / Implementation Details
+1. **工具接口**: 所有工具继承自 Tool 抽象类
+2. **参数 Schema**: 使用 JSON Schema 格式
+3. **权限系统**: 通过 `requiresPermission()` 标记
+4. **异步执行**: 工具执行使用 async/await
+5. **错误处理**: 返回标准化的错误信息
+
 ## Goals / Non-Goals
 
 ### Goals

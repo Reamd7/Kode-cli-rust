@@ -109,6 +109,39 @@ The system SHALL support saving configuration to the appropriate file path.
 - **THEN** write to ./.kode.json
 - **AND** maintain formatting and readability
 
+## Reference / 参考资料
+
+### TypeScript 版本实现参考 / TypeScript Implementation Reference
+
+在实现本规范时，请参考原版 TypeScript 项目中的以下文件：
+
+When implementing this specification, refer to the following files in the original TypeScript project:
+
+#### 核心配置模块 / Core Configuration Module
+- **配置加载与合并**: `/Users/gemini/Documents/backup/Kode-cli/src/utils/config.ts`
+  - `getGlobalConfig()` - 全局配置加载
+  - `getCurrentProjectConfig()` - 项目配置加载
+  - `saveGlobalConfig()` - 保存全局配置
+  - `saveCurrentProjectConfig()` - 保存项目配置
+  - `mergeConfigs()` - 配置合并逻辑
+
+#### 配置类型定义 / Configuration Type Definitions
+- **配置类型**: `/Users/gemini/Documents/backup/Kode-cli/src/utils/config.ts`
+  - `ProjectConfig` - 项目配置类型
+  - `McpServerConfig` - MCP 服务器配置类型
+  - `ProviderType` - 提供商类型定义
+
+#### 配置相关工具 / Configuration Utilities
+- **环境变量处理**: `/Users/gemini/Documents/backup/Kode-cli/src/utils/env.ts`
+  - `GLOBAL_CLAUDE_FILE` - 全局配置文件路径常量
+
+### 实现要点 / Implementation Notes
+
+1. **配置字段命名**: TypeScript 版本使用 camelCase，Rust 版本需要保持兼容
+2. **默认值处理**: 参考 `DEFAULT_PROJECT_CONFIG` 的默认值定义
+3. **配置合并策略**: 项目配置覆盖全局配置的同名字段
+4. **错误处理**: 配置文件不存在时应返回默认值而非错误
+
 ## Non-Goals
 
 - 本规范不包含配置验证逻辑

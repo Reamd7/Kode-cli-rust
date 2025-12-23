@@ -199,6 +199,64 @@ The system SHALL provide a tool for delegating tasks to sub-agents.
 - **THEN** only expose allowed tools to the sub-agent
 - **AND** hide other tools
 
+## Reference / 参考资料
+
+### TypeScript 版本实现参考 / TypeScript Implementation Reference
+
+在实现本规范时，请参考原版 TypeScript 项目中的以下文件：
+
+When implementing this specification, refer to the following files in the original TypeScript project:
+
+#### 工具系统核心 / Tool System Core
+- **工具基类**: `/Users/gemini/Documents/backup/Kode-cli/src/Tool.ts`
+  - Tool 抽象类定义
+  - 工具执行接口
+  - 权限检查机制
+
+- **工具注册表**: `/Users/gemini/Documents/backup/Kode-cli/src/tools.ts`
+  - `getAllTools()` - 获取所有工具
+  - `getTools()` - 获取启用的工具（包括 MCP 工具）
+  - `getReadOnlyTools()` - 获取只读工具
+
+#### 内置工具实现 / Built-in Tool Implementations
+- **文件操作工具**:
+  - `/Users/gemini/Documents/backup/Kode-cli/src/tools/FileReadTool/FileReadTool.ts`
+  - `/Users/gemini/Documents/backup/Kode-cli/src/tools/FileWriteTool/FileWriteTool.ts`
+  - `/Users/gemini/Documents/backup/Kode-cli/src/tools/FileEditTool/FileEditTool.ts`
+  - `/Users/gemini/Documents/backup/Kode-cli/src/tools/MultiEditTool/MultiEditTool.ts`
+
+- **搜索工具**:
+  - `/Users/gemini/Documents/backup/Kode-cli/src/tools/GrepTool/GrepTool.ts`
+  - `/Users/gemini/Documents/backup/Kode-cli/src/tools/GlobTool/GlobTool.ts`
+  - `/Users/gemini/Documents/backup/Kode-cli/src/tools/lsTool/lsTool.ts`
+
+- **命令执行工具**:
+  - `/Users/gemini/Documents/backup/Kode-cli/src/tools/BashTool/BashTool.ts`
+
+- **任务委托工具**:
+  - `/Users/gemini/Documents/backup/Kode-cli/src/tools/TaskTool/TaskTool.ts`
+
+- **其他工具**:
+  - `/Users/gemini/Documents/backup/Kode-cli/src/tools/ThinkTool/ThinkTool.ts`
+  - `/Users/gemini/Documents/backup/Kode-cli/src/tools/TodoWriteTool/TodoWriteTool.ts`
+  - `/Users/gemini/Documents/backup/Kode-cli/src/tools/WebSearchTool/WebSearchTool.ts`
+  - `/Users/gemini/Documents/backup/Kode-cli/src/tools/URLFetcherTool/URLFetcherTool.ts`
+  - `/Users/gemini/Documents/backup/Kode-cli/src/tools/SkillTool/SkillTool.ts`
+  - `/Users/gemini/Documents/backup/Kode-cli/src/tools/ArchitectTool/ArchitectTool.ts`
+
+#### Notebook 工具 / Notebook Tools
+- **Notebook 操作**:
+  - `/Users/gemini/Documents/backup/Kode-cli/src/tools/NotebookReadTool/NotebookReadTool.ts`
+  - `/Users/gemini/Documents/backup/Kode-cli/src/tools/NotebookEditTool/NotebookEditTool.ts`
+
+### 实现要点 / Implementation Notes
+
+1. **工具接口**: 所有工具都继承自 `Tool` 抽象类
+2. **参数 Schema**: 使用 JSON Schema 格式定义工具输入参数
+3. **权限系统**: 工具通过 `requiresPermission()` 标记是否需要用户确认
+4. **只读模式**: 只读工具用于数据浏览场景，不会修改系统状态
+5. **工具过滤**: Agent 可以定义允许使用的工具列表
+
 ## Non-Goals
 
 - 本规范不包含工具的权限管理详细实现

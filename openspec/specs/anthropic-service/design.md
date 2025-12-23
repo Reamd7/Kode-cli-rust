@@ -12,6 +12,37 @@ Anthropic 服务尚未实现，计划在 `crates/kode-services/src/anthropic.rs`
 
 The Anthropic service has not been implemented yet, planned to be implemented in `crates/kode-services/src/anthropic.rs`.
 
+## TypeScript 版本参考 / TypeScript Version Reference
+
+在实现本设计时，请参考原版 TypeScript 项目中的以下文件：
+
+When implementing this design, refer to the following files in the original TypeScript project:
+
+### Anthropic API 服务 / Anthropic API Service
+- **Claude 服务**: `/Users/gemini/Documents/backup/Kode-cli/src/services/claude.ts`
+  - API 客户端初始化
+  - 消息发送和接收
+  - 流式响应处理
+  - 错误处理和重试
+
+### API 适配器 / API Adapters
+- **适配器目录**: `/Users/gemini/Documents/backup/Kode-cli/src/services/adapters/`
+  - Anthropic 适配器实现
+  - 消息格式转换
+  - 工具调用处理
+
+### 相关类型 / Related Types
+- **请求上下文**: `/Users/gemini/Documents/backup/Kode-cli/src/types/RequestContext.ts`
+  - API 请求参数
+  - 模型配置
+  - 流式响应选项
+
+### 实现细节 / Implementation Details
+1. **API 版本**: Anthropic Messages API (2023-06-01)
+2. **流式响应**: Server-Sent Events (SSE)
+3. **错误处理**: 区分可重试和不可重试错误
+4. **超时控制**: 实现请求超时
+
 ## Goals / Non-Goals
 
 ### Goals

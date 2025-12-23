@@ -145,6 +145,46 @@ The system SHALL manage conversation context with token limit awareness.
 - **THEN** trim old messages according to strategy
 - **AND** preserve system messages
 
+## Reference / 参考资料
+
+### TypeScript 版本实现参考 / TypeScript Implementation Reference
+
+在实现本规范时，请参考原版 TypeScript 项目中的以下文件：
+
+When implementing this specification, refer to the following files in the original TypeScript project:
+
+#### 消息类型定义 / Message Type Definitions
+- **消息类型**: `/Users/gemini/Documents/backup/Kode-cli/src/types/conversation.ts`
+  - `Message` - 消息联合类型
+  - `UserMessage` - 用户消息结构
+  - `AssistantMessage` - 助手消息结构
+  - `ProgressMessage` - 进度消息结构
+
+#### 查询处理 / Query Processing
+- **查询模块**: `/Users/gemini/Documents/backup/Kode-cli/src/query.ts`
+  - 消息构建和发送
+  - 工具调用处理
+  - 响应流处理
+  - 上下文管理
+
+#### 模型适配器工厂 / Model Adapter Factory
+- **适配器工厂**: `/Users/gemini/Documents/backup/Kode-cli/src/services/modelAdapterFactory.ts`
+  - 模型提供商选择
+  - 适配器实例化
+  - 支持的提供商列表
+
+#### 多提供商支持 / Multi-Provider Support
+- **OpenAI 服务**: `/Users/gemini/Documents/backup/Kode-cli/src/services/openai.ts`
+- **其他提供商**: 支持 Mistral、DeepSeek、Kimi、Qwen 等
+
+### 实现要点 / Implementation Notes
+
+1. **消息格式**: 遵循 Anthropic Messages API 的消息格式
+2. **工具调用**: 使用 `tool_use` 和 `tool_result` 内容块
+3. **流式处理**: 支持流式和非流式两种响应模式
+4. **Token 计算**: 使用 @anthropic-ai/sdk/tokenizer 进行 token 计算
+5. **上下文管理**: 实现智能的上下文窗口管理
+
 ## Non-Goals
 
 - 本规范不包含具体的模型 API 实现

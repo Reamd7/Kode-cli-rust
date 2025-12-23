@@ -137,6 +137,41 @@ The system SHALL correctly configure HTTP headers for Anthropic API requests.
 - **WHEN** sending a request body
 - **THEN** set the correct Content-Type
 
+## Reference / 参考资料
+
+### TypeScript 版本实现参考 / TypeScript Implementation Reference
+
+在实现本规范时，请参考原版 TypeScript 项目中的以下文件：
+
+When implementing this specification, refer to the following files in the original TypeScript project:
+
+#### Anthropic API 客户端 / Anthropic API Client
+- **Anthropic 服务**: `/Users/gemini/Documents/backup/Kode-cli/src/services/claude.ts`
+  - API 客户端初始化
+  - 消息发送和接收
+  - 流式响应处理
+  - 错误处理和重试逻辑
+
+#### API 适配器 / API Adapters
+- **模型适配器**: `/Users/gemini/Documents/backup/Kode-cli/src/services/adapters/`
+  - Anthropic 适配器实现
+  - 消息格式转换
+  - 工具调用处理
+
+#### 相关类型定义 / Related Type Definitions
+- **请求上下文**: `/Users/gemini/Documents/backup/Kode-cli/src/types/RequestContext.ts`
+  - API 请求参数
+  - 模型配置
+  - 流式响应选项
+
+### 实现要点 / Implementation Notes
+
+1. **API 版本**: 使用 Anthropic Messages API (2023-06-01)
+2. **流式响应**: 使用 Server-Sent Events (SSE) 处理流式数据
+3. **错误处理**: 区分可重试错误和不可重试错误
+4. **超时控制**: 实现请求超时机制
+5. **速率限制**: 遵守 Anthropic API 的速率限制
+
 ## Non-Goals
 
 - 本规范不包含其他模型提供商（OpenAI、DeepSeek 等）

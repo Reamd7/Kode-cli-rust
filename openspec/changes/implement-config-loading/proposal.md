@@ -1,5 +1,29 @@
 # Change: 实现配置加载系统 / Implement Config Loading System
 
+## 📚 Knowledge Base / 知识库
+
+本变更基于深入的 TypeScript 版本分析，相关知识库文档：
+
+This change is based on in-depth analysis of the TypeScript version, relevant knowledge base documents:
+
+- **[TypeScript 配置系统分析](./analysis/typescript-config-system.md)** - 完整分析 TS 版本 940 行代码
+  - Complete analysis of TS version 940 lines of code
+  - 5 层配置优先级系统 / 5-layer configuration priority system
+  - 配置文件路径和结构 / Config file paths and structure
+
+- **[配置 API 参考](./analysis/config-api-reference.md)** - 30 个公开 API 函数文档
+  - 30 public API functions reference
+  - 按功能分组 / Organized by functionality
+  - 函数签名和说明 / Function signatures and descriptions
+
+- **[实施计划](./analysis/implementation-plan.md)** - 迁移策略和关键差异
+  - Migration strategy and key differences
+  - 与之前实现的对比 / Comparison with previous implementation
+  - 实施建议 / Implementation recommendations
+
+- **[知识库索引](./analysis/README.md)** - 所有分析文档的导航和说明
+  - Navigation and overview of all analysis documents
+
 ## Why / 原因
 
 配置系统是 Kode-Rust 的基础组件，需要从文件系统加载配置并与 TypeScript 版本保持兼容。

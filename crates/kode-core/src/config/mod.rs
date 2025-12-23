@@ -29,6 +29,9 @@ pub mod gpt5;
 /// MCP 支持
 pub mod mcp;
 
+/// 配置迁移
+pub mod migration;
+
 // 重新导出主要类型
 pub use loader::ConfigLoader;
 pub use types::GlobalConfig;
@@ -53,4 +56,11 @@ pub use utils::{normalize_api_key, get_custom_api_key_status, is_auto_updater_di
 pub use gpt5::{is_gpt5_model_name, validate_and_repair_gpt5_profile, validate_and_repair_all_gpt5_profiles, get_gpt5_config_recommendations, create_gpt5_model_profile};
 
 // 重新导出 MCP 支持函数
-pub use mcp::{get_mcprc_config, clear_mcprc_config_for_testing, add_mcprc_server_for_testing, remove_mcprc_server_for_testing};
+pub use mcp::get_mcprc_config;
+
+// 测试专用函数（仅在测试时可用）
+#[cfg(test)]
+pub use mcp::{clear_mcprc_config_for_testing, add_mcprc_server_for_testing, remove_mcprc_server_for_testing};
+
+// 重新导出配置迁移函数
+pub use migration::{migrate_model_profiles_remove_id, enable_configs};

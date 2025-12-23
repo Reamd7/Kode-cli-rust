@@ -2,8 +2,9 @@
 //!
 //! 提供配置管理的辅助函数。
 
-use crate::config::api::{get_global_config, save_global_config};
+use crate::config::api::{get_global_config, get_current_project_config, save_global_config};
 use crate::error::Error;
+use std::path::{Path, PathBuf};
 
 /// 规范化 API Key
 ///
@@ -127,5 +128,69 @@ mod tests {
         let user_id2 = get_or_create_user_id().await.unwrap();
         assert_eq!(user_id, user_id2);
         assert!(!user_id.is_empty());
+    }
+}
+
+/// 检查信任对话框是否已接受
+///
+/// 从当前目录开始，向上遍历目录树，检查每个项目的 has_trust_dialog_accepted 标志
+/// 如果找到任何项目已接受信任对话框，返回 true
+///
+/// # Returns
+///
+/// 返回信任对话框是否已接受
+pub async fn check_has_trust_dialog_accepted() -> Result<bool, Error> {
+    let global_config = get_global_config().await?;
+    let current_dir = std::env::current_dir()
+        .map_err(|e| Error::ConfigError(format!("Cannot get current directory: {}", e)))?
+        .canonicalize()
+        .map_err(|e| Error::ConfigError(format!("Cannot canonicalize path: {}", e)))?;
+
+    // 获取当前目录的绝对路径
+    let current_path = current_dir.to_string_lossy().to_string();
+
+    // 首先检查当前项目
+    if let Some(projects) = &global_config.projects {
+        if let Some(project_config) = projects.get(&current_path) {
+            if let Some(true) = project_config.has_trust_dialog_accepted {
+                return Ok(true);
+            }
+        }
+    }
+
+    // 向上遍历目录树
+    let mut path = current_dir.as_path();
+    while let Some(parent) = path.parent() {
+        let parent_path = parent.to_string_lossy().to_string();
+
+        if let Some(projects) = &global_config.projects {
+            if let Some(project_config) = projects.get(&parent_path) {
+                if let Some(true) = project_config.has_trust_dialog_accepted {
+                    return Ok(true);
+                }
+            }
+        }
+
+        path = parent;
+
+        // 如果到达根目录，停止
+        if path == Path::new("/") || path.parent().is_none() {
+            break;
+        }
+    }
+
+    Ok(false)
+}
+
+#[cfg(test)]
+mod tests_trust {
+    use super::*;
+
+    #[tokio::test]
+    async fn test_check_has_trust_dialog_accepted() {
+        // 这个测试依赖于实际的配置文件
+        let result = check_has_trust_dialog_accepted().await;
+        assert!(result.is_ok());
+        // 结果可能是 true 或 false，取决于实际配置
     }
 }

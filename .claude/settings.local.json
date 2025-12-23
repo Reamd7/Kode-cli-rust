@@ -13,7 +13,11 @@
       "Bash(/Users/gemini/Documents/backup/Kode-cli-rust/scripts/verify-migration-full.sh)",
       "Bash(cargo doc:*)",
       "Bash(tree:*)",
-      "Bash(git add:*)"
+      "Bash(git add:*)",
+      "Bash(git commit:*)",
+      "Bash(cat:*)",
+      "Bash(/bin/bash echo \"=== 验证实施完成情况 ===\" echo \"\" echo \"1. Config 结构体实现:\" grep -r \"pub struct GlobalConfig\" crates/kode-core/src/config/types.rs)",
+      "Bash(echo \" ❌ 缺失\" echo \"\" echo \"2. JSON 序列化 (camelCase):\" grep \"rename_all = \"\"camelCase\"\"\" crates/kode-core/src/config/types.rs)"
     ]
   },
   "statusLine": {

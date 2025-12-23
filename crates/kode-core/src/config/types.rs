@@ -78,7 +78,7 @@ pub enum McpServerConfig {
 }
 
 /// 模型提供商标识
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 #[serde(rename_all = "lowercase")]
 pub enum ProviderType {
     /// Anthropic
@@ -122,7 +122,7 @@ pub enum ProviderType {
 }
 
 /// 模型配置
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 #[serde(rename_all = "camelCase")]
 pub struct ModelProfile {
     /// 配置名称

@@ -24,7 +24,7 @@
 - [ ] Phase 3: 高级特性集成
 - [ ] Phase 4: 优化与发布
 
-查看完整路线图：[ROADMAP.md](ROADMAP.md)
+查看完整的开发规划：[OpenSpec Changes](openspec/changes/)
 
 ## ✨ 核心特性
 
@@ -43,8 +43,6 @@
 ## 🎯 项目目标
 
 详细目标请参考：[GOALS.md](GOALS.md)
-
-### 核心目标
 
 1. **完整功能移植**: 实现原 TypeScript 版本的所有核心功能
 2. **性能提升**: 利用 Rust 的性能优势
@@ -69,11 +67,11 @@ kode-cli-rust/
 └── docs/               # 文档
 ```
 
-详细架构说明：[ARCHITECTURE.md](ARCHITECTURE.md)
+详细架构说明：[OpenSpec Specs](openspec/specs/)
 
 ## 🛠️ 技术栈
 
-详细技术选型：[TECH_STACK.md](TECH_STACK.md)
+详细技术栈：查看各规范的 [design.md](openspec/specs/)
 
 **核心技术**:
 - **运行时**: Tokio (异步 IO)
@@ -133,11 +131,36 @@ kode agents
 
 ## 📚 文档
 
+### 项目文档
 - [项目目标](GOALS.md) - 详细的目标和需求
-- [开发路线图](ROADMAP.md) - 分阶段开发计划
-- [架构设计](ARCHITECTURE.md) - 系统架构说明
-- [技术栈](TECH_STACK.md) - 技术选型理由
 - [贡献指南](CONTRIBUTING.md) - 如何参与开发
+
+### OpenSpec 规范驱动开发
+- [OpenSpec 规范](openspec/specs/) - 功能需求和验收标准
+- [OpenSpec 变更](openspec/changes/) - 进行中的变更提案
+- [OpenSpec Agent 指南](openspec/AGENTS.md) - OpenSpec 工作流程说明
+
+### 开发规划
+- [OpenSpec 变更提案](openspec/changes/) - 进行中的功能开发
+- [OpenSpec 功能规范](openspec/specs/) - 系统功能和设计
+
+### OpenSpec 开发流程
+本项目使用 OpenSpec 进行规范驱动开发：
+
+1. **创建变更提案**: 使用 `openspec proposal` 创建新功能的变更提案
+2. **实施变更**: 提案批准后，使用 `/openspec:apply` 开始实施
+3. **归档变更**: 完成后使用 `/openspec:archive` 归档变更
+
+```bash
+# 查看当前变更
+openspec list
+
+# 查看功能规范
+openspec list --specs
+
+# 验证规范
+openspec validate --strict
+```
 
 ## 🤝 贡献
 
@@ -169,7 +192,7 @@ kode agents
 - [ ] CI/CD
 - [ ] 发布
 
-详细计划：[ROADMAP.md](ROADMAP.md)
+详细计划：查看 [OpenSpec Changes](openspec/changes/)
 
 ## 🌟 与原版对比
 

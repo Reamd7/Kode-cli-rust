@@ -5,7 +5,15 @@
       "Bash(cargo clean:*)",
       "Bash(cargo fmt:*)",
       "Bash(cargo clippy:*)",
-      "Bash(cargo build:*)"
+      "Bash(cargo build:*)",
+      "Bash(npx openspec validate:*)",
+      "Bash(npx openspec:*)",
+      "Bash(chmod:*)",
+      "Bash(/Users/gemini/Documents/backup/Kode-cli-rust/scripts/verify-migration.sh:*)"
     ]
+  },
+  "statusLine": {
+    "type": "command",
+    "command": "bun x ccusage statusline"
   }
 }

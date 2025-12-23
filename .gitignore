@@ -21,6 +21,7 @@ Thumbs.db
 # Configuration (may contain secrets)
 .kode.json
 .env
+.factory/mcp.json
 
 # Logs
 *.log

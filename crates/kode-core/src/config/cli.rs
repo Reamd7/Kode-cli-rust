@@ -2,7 +2,9 @@
 //!
 //! 提供命令行界面使用的配置管理函数。
 
-use crate::config::api::{get_global_config, get_current_project_config, save_global_config, save_current_project_config};
+use crate::config::api::{
+    get_current_project_config, get_global_config, save_current_project_config, save_global_config,
+};
 use crate::config::types::{GlobalConfig, ProjectConfig};
 use crate::error::Error;
 use serde::{de::DeserializeOwned, Serialize};
@@ -120,13 +122,15 @@ pub async fn set_config_for_cli(key: &str, value: &str, global: bool) -> Result<
         let mut config = get_global_config().await?;
 
         // 特殊处理 autoUpdaterStatus
-        if key == "autoUpdaterStatus" {
-            if !matches!(value, "disabled" | "enabled" | "noPermissions" | "notConfigured") {
+        if key == "autoUpdaterStatus"
+            && !matches!(
+                value,
+                "disabled" | "enabled" | "noPermissions" | "notConfigured"
+            ) {
                 return Err(Error::ConfigError(format!(
                     "Invalid autoUpdaterStatus: {}. Must be one of: disabled, enabled, noPermissions, notConfigured",
                     value
                 )));
-            }
         }
 
         set_nested_value(&mut config, key, value)?;
@@ -215,12 +219,16 @@ fn get_nested_value<T: Serialize>(obj: &T, key: &str) -> Result<String, Error> {
         }
     }
 
-    Ok(serde_json::to_string(current)
-        .map_err(|e| Error::ConfigError(format!("Failed to serialize value: {}", e)))?)
+    serde_json::to_string(current)
+        .map_err(|e| Error::ConfigError(format!("Failed to serialize value: {}", e)))
 }
 
 /// 在嵌套结构中设置值
-fn set_nested_value<T: Serialize + DeserializeOwned>(obj: &mut T, key: &str, value_str: &str) -> Result<(), Error> {
+fn set_nested_value<T: Serialize + DeserializeOwned>(
+    obj: &mut T,
+    key: &str,
+    value_str: &str,
+) -> Result<(), Error> {
     let mut value_map = serde_json::to_value(&*obj)
         .map_err(|e| Error::ConfigError(format!("Failed to serialize config: {}", e)))?;
 
@@ -243,7 +251,11 @@ fn set_nested_value<T: Serialize + DeserializeOwned>(obj: &mut T, key: &str, val
             if i == keys.len() - 1 {
                 current[*k] = value.clone();
             } else {
-                if !current.as_object().map(|o| o.contains_key(*k)).unwrap_or(false) {
+                if !current
+                    .as_object()
+                    .map(|o| o.contains_key(*k))
+                    .unwrap_or(false)
+                {
                     current[*k] = Value::Object(serde_json::Map::new());
                 }
                 current = &mut current[*k];
@@ -258,25 +270,26 @@ fn set_nested_value<T: Serialize + DeserializeOwned>(obj: &mut T, key: &str, val
 }
 
 /// 从嵌套结构中删除值
-fn delete_nested_value<T: Serialize + DeserializeOwned>(obj: &mut T, key: &str) -> Result<(), Error> {
+fn delete_nested_value<T: Serialize + DeserializeOwned>(
+    obj: &mut T,
+    key: &str,
+) -> Result<(), Error> {
     let mut value_map = serde_json::to_value(&*obj)
         .map_err(|e| Error::ConfigError(format!("Failed to serialize config: {}", e)))?;
     let keys: Vec<&str> = key.split('.').collect();
 
     if keys.len() == 1 {
-        value_map.as_object_mut()
-            .map(|o| o.remove(keys[0]));
+        value_map.as_object_mut().map(|o| o.remove(keys[0]));
     } else {
         // 处理嵌套键
         let mut current = &mut value_map;
         for (i, k) in keys.iter().enumerate() {
             if i == keys.len() - 1 {
-                current.as_object_mut()
-                    .map(|o| o.remove(*k));
+                current.as_object_mut().map(|o| o.remove(*k));
             } else {
-                current = current.get_mut(*k).ok_or_else(|| {
-                    Error::ConfigError(format!("Key not found: {}", key))
-                })?;
+                current = current
+                    .get_mut(*k)
+                    .ok_or_else(|| Error::ConfigError(format!("Key not found: {}", key)))?;
             }
         }
     }
@@ -292,7 +305,9 @@ fn filter_default_fields_global(config: &GlobalConfig) -> Value {
     let config_value = serde_json::to_value(config).unwrap_or(Value::Null);
     let default_value = serde_json::to_value(&default).unwrap_or(Value::Null);
 
-    if let (Some(config_obj), Some(default_obj)) = (config_value.as_object(), default_value.as_object()) {
+    if let (Some(config_obj), Some(default_obj)) =
+        (config_value.as_object(), default_value.as_object())
+    {
         let mut filtered = serde_json::Map::new();
         for (key, value) in config_obj.iter() {
             if default_obj.get(key) != Some(value) {
@@ -311,7 +326,9 @@ fn filter_default_fields_project(config: &ProjectConfig) -> Value {
     let config_value = serde_json::to_value(config).unwrap_or(Value::Null);
     let default_value = serde_json::to_value(&default).unwrap_or(Value::Null);
 
-    if let (Some(config_obj), Some(default_obj)) = (config_value.as_object(), default_value.as_object()) {
+    if let (Some(config_obj), Some(default_obj)) =
+        (config_value.as_object(), default_value.as_object())
+    {
         let mut filtered = serde_json::Map::new();
         for (key, value) in config_obj.iter() {
             if default_obj.get(key) != Some(value) {

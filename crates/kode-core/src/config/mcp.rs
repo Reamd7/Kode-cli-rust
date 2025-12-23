@@ -5,7 +5,7 @@
 use crate::config::types::McpServerConfig;
 use crate::error::Error;
 use std::collections::HashMap;
-use std::path::{Path, PathBuf};
+use std::path::PathBuf;
 use tokio::fs;
 
 /// 获取 .mcprc 配置
@@ -22,27 +22,27 @@ pub async fn get_mcprc_config() -> Result<String, Error> {
     // 检查文件是否存在
     if !mcprc_path.exists() {
         let empty = serde_json::json!({});
-        return Ok(serde_json::to_string(&empty)
-            .map_err(|e| Error::ConfigError(format!("Failed to serialize: {}", e)))?);
+        return serde_json::to_string(&empty)
+            .map_err(|e| Error::ConfigError(format!("Failed to serialize: {}", e)));
     }
 
     // 读取文件内容（容忍读取错误）
-    let content = fs::read_to_string(&mcprc_path).await
+    let content = fs::read_to_string(&mcprc_path)
+        .await
         .unwrap_or_else(|_| String::new());
 
     // 如果文件为空或读取失败，返回空配置
     if content.trim().is_empty() {
         let empty = serde_json::json!({});
-        return Ok(serde_json::to_string(&empty)
-            .map_err(|e| Error::ConfigError(format!("Failed to serialize: {}", e)))?);
+        return serde_json::to_string(&empty)
+            .map_err(|e| Error::ConfigError(format!("Failed to serialize: {}", e)));
     }
 
     // 解析 JSON（容忍解析错误）
-    let config: serde_json::Value = serde_json::from_str(&content)
-        .unwrap_or(serde_json::json!({}));
+    let config: serde_json::Value = serde_json::from_str(&content).unwrap_or(serde_json::json!({}));
 
-    Ok(serde_json::to_string(&config)
-        .map_err(|e| Error::ConfigError(format!("Failed to serialize config: {}", e)))?)
+    serde_json::to_string(&config)
+        .map_err(|e| Error::ConfigError(format!("Failed to serialize config: {}", e)))
 }
 
 /// 清空 .mcprc 配置（仅用于测试）
@@ -56,7 +56,8 @@ pub async fn clear_mcprc_config_for_testing() -> Result<(), Error> {
 
     // 如果文件存在，删除它
     if mcprc_path.exists() {
-        fs::remove_file(&mcprc_path).await
+        fs::remove_file(&mcprc_path)
+            .await
             .map_err(|e| Error::ConfigError(format!("Failed to remove .mcprc file: {}", e)))?;
     }
 
@@ -123,6 +124,7 @@ fn get_mcprc_path() -> Result<PathBuf, Error> {
 }
 
 /// 获取 .mcprc 配置为 HashMap
+#[allow(dead_code)]
 async fn get_mcprc_config_hashmap() -> Result<HashMap<String, McpServerConfig>, Error> {
     let config_str = get_mcprc_config().await?;
     let config: serde_json::Value = serde_json::from_str(&config_str)
@@ -139,6 +141,7 @@ async fn get_mcprc_config_hashmap() -> Result<HashMap<String, McpServerConfig>, 
 }
 
 /// 保存 .mcprc 配置
+#[allow(dead_code)]
 async fn save_mcprc_config(config: &HashMap<String, McpServerConfig>) -> Result<(), Error> {
     let mcprc_path = get_mcprc_path()?;
 
@@ -147,7 +150,8 @@ async fn save_mcprc_config(config: &HashMap<String, McpServerConfig>) -> Result<
         .map_err(|e| Error::ConfigError(format!("Failed to serialize .mcprc config: {}", e)))?;
 
     // 写入文件
-    fs::write(&mcprc_path, content).await
+    fs::write(&mcprc_path, content)
+        .await
         .map_err(|e| Error::ConfigSaveError {
             path: mcprc_path,
             message: e.to_string(),

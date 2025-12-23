@@ -2,9 +2,9 @@
 //!
 //! 提供配置管理的辅助函数。
 
-use crate::config::api::{get_global_config, get_current_project_config, save_global_config};
+use crate::config::api::{get_global_config, save_global_config};
 use crate::error::Error;
-use std::path::{Path, PathBuf};
+use std::path::Path;
 
 /// 规范化 API Key
 ///
@@ -45,7 +45,7 @@ pub fn normalize_api_key(api_key: &str) -> String {
 pub async fn get_custom_api_key_status() -> Result<String, Error> {
     let config = get_global_config().await?;
 
-    if let Some(responses) = &config.custom_api_key_responses {
+    if let Some(_responses) = &config.custom_api_key_responses {
         // 这里需要一个实际的 API key 来检查，暂时返回 "new"
         return Ok("new".to_string());
     }
@@ -62,7 +62,10 @@ pub async fn is_auto_updater_disabled() -> Result<bool, Error> {
     let config = get_global_config().await?;
 
     if let Some(status) = &config.auto_updater_status {
-        Ok(matches!(status, crate::config::types::AutoUpdaterStatus::Disabled))
+        Ok(matches!(
+            status,
+            crate::config::types::AutoUpdaterStatus::Disabled
+        ))
     } else {
         Ok(false)
     }

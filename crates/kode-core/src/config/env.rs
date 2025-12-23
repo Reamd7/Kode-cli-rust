@@ -2,8 +2,8 @@
 //!
 //! 提供环境变量的读取和处理功能。
 
-use std::path::PathBuf;
 use std::env;
+use std::path::PathBuf;
 
 /// 获取配置文件路径
 ///
@@ -68,7 +68,11 @@ mod tests {
         // 检查路径包含 .kode.json 或 config.json（home_dir 可能在测试环境中返回不同路径）
         let path_str = path.to_string_lossy();
         let has_config = path_str.contains(".kode.json") || path_str.contains("config.json");
-        assert!(has_config, "Path should contain config filename: {}", path_str);
+        assert!(
+            has_config,
+            "Path should contain config filename: {}",
+            path_str
+        );
     }
 
     #[test]

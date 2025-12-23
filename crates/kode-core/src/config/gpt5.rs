@@ -64,8 +64,8 @@ pub fn get_gpt5_config_recommendations(model_name: &str) -> Result<String, Error
         "is_gpt5": true
     });
 
-    Ok(serde_json::to_string(&recommendations)
-        .map_err(|e| Error::ConfigError(format!("Failed to serialize recommendations: {}", e)))?)
+    serde_json::to_string(&recommendations)
+        .map_err(|e| Error::ConfigError(format!("Failed to serialize recommendations: {}", e)))
 }
 
 /// 验证和修复 GPT-5 模型配置
@@ -130,7 +130,12 @@ pub fn validate_and_repair_gpt5_profile(mut profile: ModelProfile) -> Result<Mod
     }
 
     // 设置默认 base_url（如需要）
-    if profile.base_url.is_none() && matches!(profile.provider, ProviderType::Custom | ProviderType::CustomOpenai) {
+    if profile.base_url.is_none()
+        && matches!(
+            profile.provider,
+            ProviderType::Custom | ProviderType::CustomOpenai
+        )
+    {
         profile.base_url = Some("https://api.openai.com/v1".to_string());
     }
 
@@ -140,7 +145,7 @@ pub fn validate_and_repair_gpt5_profile(mut profile: ModelProfile) -> Result<Mod
         std::time::SystemTime::now()
             .duration_since(std::time::UNIX_EPOCH)
             .unwrap()
-            .as_secs()
+            .as_secs(),
     );
 
     Ok(profile)
@@ -156,7 +161,10 @@ pub fn validate_and_repair_gpt5_profile(mut profile: ModelProfile) -> Result<Mod
 pub async fn validate_and_repair_all_gpt5_profiles() -> Result<String, Error> {
     let mut config = get_global_config().await?;
 
-    let profiles = config.model_profiles.as_mut().map(|p| p.as_mut_slice()).unwrap_or(&mut []);
+    let profiles = config
+        .model_profiles
+        .as_deref_mut()
+        .unwrap_or(&mut []);
 
     let mut repaired = 0;
     let total = profiles.len();
@@ -183,8 +191,8 @@ pub async fn validate_and_repair_all_gpt5_profiles() -> Result<String, Error> {
         "total": total
     });
 
-    Ok(serde_json::to_string(&result)
-        .map_err(|e| Error::ConfigError(format!("Failed to serialize result: {}", e)))?)
+    serde_json::to_string(&result)
+        .map_err(|e| Error::ConfigError(format!("Failed to serialize result: {}", e)))
 }
 
 /// 创建 GPT-5 模型配置
@@ -230,7 +238,7 @@ pub async fn create_gpt5_model_profile(
             std::time::SystemTime::now()
                 .duration_since(std::time::UNIX_EPOCH)
                 .unwrap()
-                .as_secs()
+                .as_secs(),
         ),
     };
 
@@ -285,7 +293,7 @@ mod tests {
             model_name: "gpt-5".to_string(),
             base_url: None,
             api_key: "sk-test".to_string(),
-            max_tokens: 1000, // 故意设置过小
+            max_tokens: 1000,     // 故意设置过小
             context_length: 1000, // 故意设置过小
             reasoning_effort: None,
             is_active: true,

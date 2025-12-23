@@ -3,7 +3,7 @@
 //! 提供配置版本迁移和兼容性处理功能。
 
 use crate::config::api::get_global_config;
-use crate::config::types::{GlobalConfig, ModelProfile, ModelPointers};
+use crate::config::types::GlobalConfig;
 use crate::error::Error;
 use std::collections::HashMap;
 
@@ -31,7 +31,10 @@ use std::collections::HashMap;
 /// ```
 pub fn migrate_model_profiles_remove_id(mut config: GlobalConfig) -> GlobalConfig {
     // 如果没有 model_profiles，直接返回
-    let profiles = config.model_profiles.as_ref().map(|p| p.as_slice()).unwrap_or(&[]);
+    let profiles = config
+        .model_profiles
+        .as_deref()
+        .unwrap_or(&[]);
     if profiles.is_empty() {
         return config;
     }
@@ -130,24 +133,22 @@ mod tests {
     #[test]
     fn test_migrate_model_profiles_remove_id_with_profiles() {
         let mut config = GlobalConfig::default();
-        config.model_profiles = Some(vec![
-            ModelProfile {
-                name: "test-model".to_string(),
-                provider: ProviderType::Anthropic,
-                model_name: "claude-3-5-sonnet-20241022".to_string(),
-                base_url: None,
-                api_key: "sk-ant-test".to_string(),
-                max_tokens: 8192,
-                context_length: 200000,
-                reasoning_effort: None,
-                is_active: true,
-                created_at: 0,
-                last_used: None,
-                is_gpt5: None,
-                validation_status: None,
-                last_validation: None,
-            }
-        ]);
+        config.model_profiles = Some(vec![ModelProfile {
+            name: "test-model".to_string(),
+            provider: ProviderType::Anthropic,
+            model_name: "claude-3-5-sonnet-20241022".to_string(),
+            base_url: None,
+            api_key: "sk-ant-test".to_string(),
+            max_tokens: 8192,
+            context_length: 200000,
+            reasoning_effort: None,
+            is_active: true,
+            created_at: 0,
+            last_used: None,
+            is_gpt5: None,
+            validation_status: None,
+            last_validation: None,
+        }]);
 
         let migrated = migrate_model_profiles_remove_id(config);
         assert!(migrated.model_profiles.is_some());

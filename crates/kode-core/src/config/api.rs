@@ -3,8 +3,8 @@
 //! 提供公开的配置管理 API 函数，与 TypeScript 版本保持一致。
 
 use crate::config::env::get_config_file_path;
-use crate::config::types::{GlobalConfig, ProjectConfig};
 use crate::config::loader::ConfigLoader;
+use crate::config::types::{GlobalConfig, ProjectConfig};
 use crate::error::Error;
 use std::collections::HashMap;
 use tokio::fs;
@@ -125,8 +125,8 @@ pub async fn save_global_config(config: &GlobalConfig) -> Result<(), Error> {
     }
 
     // 序列化为 JSON（2 空格缩进）
-    let content = serde_json::to_string_pretty(&filtered_config)
-        .map_err(|e| Error::ConfigSaveError {
+    let content =
+        serde_json::to_string_pretty(&filtered_config).map_err(|e| Error::ConfigSaveError {
             path: config_path.clone(),
             message: format!("Failed to serialize config: {}", e),
         })?;
@@ -197,7 +197,9 @@ fn filter_default_fields(config: &GlobalConfig) -> serde_json::Value {
     let config_value = serde_json::to_value(config).unwrap_or(serde_json::json!({}));
     let default_value = serde_json::to_value(&default).unwrap_or(serde_json::json!({}));
 
-    if let (Some(config_obj), Some(default_obj)) = (config_value.as_object(), default_value.as_object()) {
+    if let (Some(config_obj), Some(default_obj)) =
+        (config_value.as_object(), default_value.as_object())
+    {
         let mut filtered = serde_json::Map::new();
 
         for (key, value) in config_obj.iter() {

@@ -126,8 +126,9 @@ pub async fn set_config_for_cli(key: &str, value: &str, global: bool) -> Result<
             && !matches!(
                 value,
                 "disabled" | "enabled" | "noPermissions" | "notConfigured"
-            ) {
-                return Err(Error::ConfigError(format!(
+            )
+        {
+            return Err(Error::ConfigError(format!(
                     "Invalid autoUpdaterStatus: {}. Must be one of: disabled, enabled, noPermissions, notConfigured",
                     value
                 )));

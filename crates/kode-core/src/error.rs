@@ -39,4 +39,12 @@ pub enum Error {
         /// 错误消息
         message: String,
     },
+
+    /// Agent 未找到
+    #[error("Agent '{0}' not found")]
+    AgentNotFound(String),
+
+    /// Agent 解析错误
+    #[error("Failed to parse agent: {0}")]
+    AgentParseError(String),
 }

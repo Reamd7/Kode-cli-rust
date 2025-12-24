@@ -37,8 +37,10 @@ lru = { workspace = true }
 chrono = { workspace = true }
 once_cell = { workspace = true }
 rand = { workspace = true }
+uuid = { workspace = true, features = ["v4"] }
 
 [dev-dependencies]
 tokio = { workspace = true, features = ["test-util"] }
 thiserror = { workspace = true }
 tempfile = { workspace = true }
+serial_test = "3.1"

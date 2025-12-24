@@ -161,10 +161,7 @@ pub fn validate_and_repair_gpt5_profile(mut profile: ModelProfile) -> Result<Mod
 pub async fn validate_and_repair_all_gpt5_profiles() -> Result<String, Error> {
     let mut config = get_global_config().await?;
 
-    let profiles = config
-        .model_profiles
-        .as_deref_mut()
-        .unwrap_or(&mut []);
+    let profiles = config.model_profiles.as_deref_mut().unwrap_or(&mut []);
 
     let mut repaired = 0;
     let total = profiles.len();

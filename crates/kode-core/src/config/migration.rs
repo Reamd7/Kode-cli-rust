@@ -31,10 +31,7 @@ use std::collections::HashMap;
 /// ```
 pub fn migrate_model_profiles_remove_id(mut config: GlobalConfig) -> GlobalConfig {
     // 如果没有 model_profiles，直接返回
-    let profiles = config
-        .model_profiles
-        .as_deref()
-        .unwrap_or(&[]);
+    let profiles = config.model_profiles.as_deref().unwrap_or(&[]);
     if profiles.is_empty() {
         return config;
     }

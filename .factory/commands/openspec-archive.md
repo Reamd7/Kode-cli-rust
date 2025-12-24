@@ -28,14 +28,35 @@ argument-hint: change-id
 4. Review the command output to confirm the target specs were updated and the change landed in `changes/archive/`.
    / 检查命令输出，确认目标规范已更新，变更已放入 `changes/archive/`。
 5. **自动更新优先级文档 / Auto-update Priority Document**：
-   - 从归档输出中提取涉及的 spec ID 列表
-   - 更新 `openspec/SPEC_PRIORITIES.md` 中对应 spec 的状态为 `✅ 已完成`
-   - 更新"对应变更"列为归档目录名（如 `2025-12-24-implement-agent-system`）
-   - 更新"最后更新"时间戳为当前日期
-   - Extract list of involved spec IDs from archive output
-   - Update corresponding spec status in `openspec/SPEC_PRIORITIES.md` to `✅ 已完成`
-   - Update "对应变更" column to archive directory name (e.g., `2025-12-24-implement-agent-system`)
-   - Update "最后更新" timestamp to current date
+   
+   **LLM 自主识别和更新 / LLM Autonomous Recognition and Update**
+   
+   你需要自主完成以下工作，不需要脚本：
+   
+   a) **识别已归档的 spec**：
+      - 查看 `openspec/changes/archive/` 目录
+      - 从刚归档的变更目录名中提取 spec ID（例如 `2025-12-24-implement-message-model` → `message-model`）
+      - 检查该变更的 `proposal.md` 确认涉及的 spec
+   
+   b) **读取当前优先级文档**：
+      - 读取 `openspec/SPEC_PRIORITIES.md`
+      - 找到对应 spec 的行，查看当前状态
+   
+   c) **判断是否需要更新**：
+      - 如果状态不是 `✅ 已完成`，则需要更新
+      - 如果对应变更列不是归档目录名，则需要更新
+   
+   d) **直接修改文档**：
+      - 使用 Edit 工具直接修改 `openspec/SPEC_PRIORITIES.md`
+      - 更新对应 spec 的状态为 `✅ 已完成`
+      - 更新"对应变更"列为归档目录名（如 `2025-12-24-implement-message-model`）
+      - 更新文档顶部的"最后更新"时间戳为当前日期
+   
+   e) **输出简短报告**：
+      ```
+      📊 已更新优先级文档
+      ✓ message-model: ⬜ → ✅ (2025-12-24-implement-message-model)
+      ```
 6. Validate with `openspec validate --strict` and inspect with `openspec show <id>` if anything looks off.
    / 使用 `openspec validate --strict` 验证，如有异常使用 `openspec show <id>` 检查。
 

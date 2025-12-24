@@ -5,40 +5,20 @@
 消息与模型抽象是 Kode 与 AI 模型交互的核心接口，定义了统一的消息格式和模型适配器接口。
 
 The message and model abstraction is the core interface for Kode to interact with AI models, defining unified message formats and model adapter interfaces.
-
 ## Requirements
-
 ### Requirement: 消息数据结构 / Message Data Structure
 The system SHALL define a unified message structure representing conversations with AI models.
 
 系统应定义统一的消息结构来表示与 AI 模型的对话。
 
-#### Scenario: 用户消息 / User Message
-- **WHEN** 用户发送输入时
-- **THEN** 创建包含 role="user" 的消息
-- **AND** 消息包含文本内容和可选的图片
+#### Scenario: 消息结构增强 / Message Structure Enhancement
+- **WHEN** 创建消息时
+- **THEN** 包含所有必需字段（id, role, content）
+- **AND** 包含可选元数据（timestamp, cost_usd, duration_ms, response_id）
 
-- **WHEN** the user sends input
-- **THEN** create a message with role="user"
-- **AND** the message contains text content and optional images
-
-#### Scenario: 助手消息 / Assistant Message
-- **WHEN** AI 模型返回响应时
-- **THEN** 创建包含 role="assistant" 的消息
-- **AND** 消息包含文本内容或工具调用
-
-- **WHEN** the AI model returns a response
-- **THEN** create a message with role="assistant"
-- **AND** the message contains text content or tool calls
-
-#### Scenario: 系统消息 / System Message
-- **WHEN** 设置系统提示词时
-- **THEN** 创建包含 role="system" 的消息
-- **AND** 消息包含系统提示内容
-
-- **WHEN** setting the system prompt
-- **THEN** create a message with role="system"
-- **AND** the message contains the system prompt content
+- **WHEN** creating a message
+- **THEN** includes all required fields (id, role, content)
+- **AND** includes optional metadata (timestamp, cost_usd, duration_ms, response_id)
 
 ### Requirement: 内容块类型 / Content Block Types
 The system SHALL support multiple content block types for rich message content.
@@ -136,6 +116,80 @@ The system SHALL track token usage for API calls.
 - **THEN** return the number of input tokens
 - **AND** return the number of output tokens
 - **AND** optionally return total token count
+
+### Requirement: 消息元数据 / Message Metadata
+The system SHALL enhance the message structure with metadata for tracking.
+
+系统应增强消息结构以支持元数据追踪。
+
+#### Scenario: 消息唯一标识 / Message Unique Identifier
+- **WHEN** 创建消息时
+- **THEN** 生成唯一的 UUID 作为消息标识
+- **AND** 记录创建时间戳
+
+- **WHEN** creating a message
+- **THEN** generate unique UUID as message identifier
+- **AND** record creation timestamp
+
+#### Scenario: 成本追踪 / Cost Tracking
+- **WHEN** API 响应返回时
+- **THEN** 追踪 token 成本（cost_usd）
+- **AND** 追踪执行耗时（duration_ms）
+
+- **WHEN** API response returns
+- **THEN** track token cost (cost_usd)
+- **AND** track execution time (duration_ms)
+
+#### Scenario: 响应追踪 / Response Tracking
+- **WHEN** 使用响应 ID 追踪多轮对话时
+- **THEN** 记录 response_id 用于关联
+
+- **WHEN** using response ID to track multi-turn conversations
+- **THEN** record response_id for correlation
+
+### Requirement: ProgressMessage 类型 / ProgressMessage Type
+The system SHALL support a message type for tool execution progress.
+
+系统应支持工具执行进度的消息类型。
+
+#### Scenario: 进度消息结构 / Progress Message Structure
+- **WHEN** 工具执行期间显示进度时
+- **THEN** 使用 ProgressMessage 表示
+- **AND** 包含原始消息内容
+- **AND** 包含工具使用 ID 和关联工具使用 ID
+- **AND** 包含可用工具列表和规范化消息列表
+
+- **WHEN** showing progress during tool execution
+- **THEN** use ProgressMessage to represent
+- **AND** includes original message content
+- **AND** includes tool_use_id and sibling_tool_use_ids
+- **AND** includes available tools list and normalized messages list
+
+### Requirement: 用户消息选项 / User Message Options
+The system SHALL support options for user messages.
+
+系统应支持用户消息的附加选项。
+
+#### Scenario: Koding 模式 / Koding Mode
+- **WHEN** 在 Koding 模式下发送输入时
+- **THEN** 标记消息为 koding 请求
+- **AND** 可选提供 koding 上下文信息
+
+- **WHEN** sending input in Koding mode
+- **THEN** mark message as koding request
+- **AND** optionally provide koding context information
+
+### Requirement: 错误标记 / Error Marking
+The system SHALL support error marking for API responses.
+
+系统应支持 API 响应的错误标记。
+
+#### Scenario: API 错误消息 / API Error Message
+- **WHEN** API 返回错误响应时
+- **THEN** 标记消息为 API 错误（is_api_error_message）
+
+- **WHEN** API returns error response
+- **THEN** mark message as API error (is_api_error_message)
 
 ## Reference / 参考资料
 

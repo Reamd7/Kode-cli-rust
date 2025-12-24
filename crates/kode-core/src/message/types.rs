@@ -115,7 +115,7 @@ pub struct UserMessageOptions {
 /// 消息结构
 ///
 /// 表示 AI 对话中的单条消息。
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct Message {
     /// 消息唯一标识
     pub id: Uuid,
@@ -277,7 +277,7 @@ impl Message {
 /// 进度消息类型
 ///
 /// 用于在工具执行期间显示进度更新。
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct ProgressMessage {
     /// 助手消息内容
     pub content: Message,
@@ -352,7 +352,7 @@ mod tests {
         assert_eq!(Message::system("test").role_str(), "system");
     }
 
-    [test]
+    #[test]
     fn test_message_serialization() {
         let msg = Message::user("Hello");
         let json = serde_json::to_string(&msg).unwrap();

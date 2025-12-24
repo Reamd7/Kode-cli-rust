@@ -22,7 +22,7 @@
 |------|--------|------|----------|------|
 | config-loading | P0 | ✅ 已完成 | 2024-12-24-implement-config-loading | 配置加载系统 |
 | agent-system | P1 | ✅ 已完成 | 2025-12-24-implement-agent-system | Agent 系统 |
-| message-model | P0 | ⬜ 未开始 | implement-message-model | **下一步建议** |
+| message-model | P0 | ✅ 已完成 | 2025-12-24-implement-message-model | 消息与模型抽象 |
 | tool-system | P1 | ⬜ 未开始 | implement-tool-system | 工具系统 |
 | anthropic-service | P1 | ⬜ 未开始 | implement-anthropic-service | Anthropic 服务 |
 | openai-service | P1 | ⬜ 未开始 | implement-openai-service | OpenAI 服务 |

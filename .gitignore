@@ -47,3 +47,6 @@ cobertura.xml
 
 # Benchmarks
 target/criterion/
+
+
+.serena

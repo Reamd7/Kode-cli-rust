@@ -69,6 +69,37 @@ kode-cli-rust/
   - 函数/变量：`snake_case`
   - 常量：`SCREAMING_SNAKE_CASE`
 
+#### 代码注释语言规范
+- **✅ 代码注释使用中文** - 所有代码注释（包括行内注释和文档注释）使用中文
+- **✅ 变量/函数名称使用英文** - 遵循 Rust 命名规范
+- **✅ 文档注释使用中文** - rustdoc 注释的内容使用中文，但保留英文的标准章节标题（如 `# Arguments`、`# Errors`、`# Examples`）
+
+```rust
+/// 从指定路径加载配置。
+///
+/// # Arguments
+/// * `path` - 配置文件路径
+///
+/// # Errors
+/// 如果文件无法读取或解析，返回 `Error::ConfigLoadError`
+///
+/// # Examples
+/// ```no_run
+/// use kode_core::config::Config;
+/// # async fn example() -> Result<(), Box<dyn std::error::Error>> {
+/// let config = Config::load_from_file("~/.kode.json").await?;
+/// # Ok(())
+/// # }
+/// ```
+pub async fn load_from_file(path: &str) -> Result<Config> {
+    // 读取文件内容
+    let content = tokio::fs::read_to_string(path)
+        .await
+        .context(format!("无法读取配置文件: {}", path))?;
+    // ...
+}
+```
+
 #### 文档注释
 - 公开 API 必须有 rustdoc 注释
 - 包含 `# Arguments`、`# Errors`、`# Examples` 章节

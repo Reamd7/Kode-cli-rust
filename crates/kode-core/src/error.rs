@@ -47,4 +47,21 @@ pub enum Error {
     /// Agent 解析错误
     #[error("Failed to parse agent: {0}")]
     AgentParseError(String),
+
+    // ========== 模型相关错误 ==========
+    /// 模型 API 请求失败
+    #[error("Model request failed: {0}")]
+    ModelRequestError(String),
+
+    /// 模型响应解析失败
+    #[error("Failed to parse model response: {0}")]
+    ModelResponseError(String),
+
+    /// 模型流式响应错误
+    #[error("Model stream error: {0}")]
+    ModelStreamError(String),
+
+    /// 模型未配置
+    #[error("Model not configured: {0}")]
+    ModelNotConfigured(String),
 }

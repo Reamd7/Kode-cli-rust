@@ -31,14 +31,14 @@ The system SHALL define a unified message structure representing conversations w
 - **THEN** create a message with role="assistant"
 - **AND** the message contains text content or tool calls
 
-#### Scenario: 工具结果消息 / Tool Result Message
-- **WHEN** 工具执行完成时
-- **THEN** 创建包含 role="tool" 的消息
-- **AND** 消息包含工具执行结果
+#### Scenario: 系统消息 / System Message
+- **WHEN** 设置系统提示词时
+- **THEN** 创建包含 role="system" 的消息
+- **AND** 消息包含系统提示内容
 
-- **WHEN** a tool execution completes
-- **THEN** create a message with role="tool"
-- **AND** the message contains the tool execution result
+- **WHEN** setting the system prompt
+- **THEN** create a message with role="system"
+- **AND** the message contains the system prompt content
 
 ### Requirement: 内容块类型 / Content Block Types
 The system SHALL support multiple content block types for rich message content.
@@ -72,6 +72,15 @@ The system SHALL support multiple content block types for rich message content.
 - **THEN** use ImageBlock to store it
 - **AND** support multiple image formats
 
+#### Scenario: 工具结果 / Tool Result
+- **WHEN** 工具执行完成时
+- **THEN** 使用 ToolResultBlock 表示结果
+- **AND** 包含工具执行结果和状态
+
+- **WHEN** a tool execution completes
+- **THEN** use ToolResultBlock to represent the result
+- **AND** include the tool execution result and status
+
 ### Requirement: 模型适配器接口 / Model Adapter Interface
 The system SHALL provide a unified interface for interacting with different AI model providers.
 
@@ -99,51 +108,34 @@ The system SHALL provide a unified interface for interacting with different AI m
 - **AND** return content chunks progressively
 - **AND** support real-time display
 
-### Requirement: 模型管理器 / Model Manager
-The system SHALL manage multiple model profiles and support runtime model switching.
+#### Scenario: 流块类型 / Stream Chunk Types
+- **WHEN** 接收流式响应时
+- **THEN** 支持多种流块事件类型
+- **AND** 包括内容块开始、增量、结束
+- **AND** 包括工具使用请求
+- **AND** 包括消息结束和使用统计
 
-系统应管理多个模型配置并支持运行时模型切换。
+- **WHEN** receiving streaming response
+- **THEN** support multiple stream chunk event types
+- **AND** include content block start, delta, stop
+- **AND** include tool use requests
+- **AND** include message stop and usage statistics
 
-#### Scenario: 模型切换 / Model Switching
-- **WHEN** 用户请求切换模型时
-- **THEN** 更新当前模型配置
-- **AND** 验证新模型配置有效
+### Requirement: Token 使用统计 / Token Usage
+The system SHALL track token usage for API calls.
 
-- **WHEN** the user requests to switch models
-- **THEN** update the current model configuration
-- **AND** validate the new model configuration
+系统应跟踪 API 调用的 token 使用情况。
 
-#### Scenario: 获取模型 / Get Model
-- **WHEN** 请求特定模型时
-- **THEN** 返回对应的模型适配器
-- **AND** 如果模型不存在则返回错误
+#### Scenario: Token 统计
+- **WHEN** API 调用完成时
+- **THEN** 返回输入 token 数量
+- **AND** 返回输出 token 数量
+- **AND** 可选返回总 token 数量
 
-- **WHEN** a specific model is requested
-- **THEN** return the corresponding model adapter
-- **AND** return an error if the model does not exist
-
-### Requirement: 消息上下文管理 / Message Context Management
-The system SHALL manage conversation context with token limit awareness.
-
-系统应管理对话上下文并考虑 token 限制。
-
-#### Scenario: 添加消息 / Add Message
-- **WHEN** 添加新消息到上下文时
-- **THEN** 消息被追加到消息列表
-- **AND** 更新 token 计数
-
-- **WHEN** adding a new message to context
-- **THEN** the message is appended to the message list
-- **AND** update the token count
-
-#### Scenario: 上下文裁剪 / Context Trimming
-- **WHEN** 上下文超过 token 限制时
-- **THEN** 按策略裁剪旧消息
-- **AND** 保留系统消息
-
-- **WHEN** the context exceeds token limit
-- **THEN** trim old messages according to strategy
-- **AND** preserve system messages
+- **WHEN** API call completes
+- **THEN** return the number of input tokens
+- **AND** return the number of output tokens
+- **AND** optionally return total token count
 
 ## Reference / 参考资料
 
@@ -158,39 +150,59 @@ When implementing this specification, refer to the following files in the origin
   - `Message` - 消息联合类型
   - `UserMessage` - 用户消息结构
   - `AssistantMessage` - 助手消息结构
-  - `ProgressMessage` - 进度消息结构
 
 #### 查询处理 / Query Processing
 - **查询模块**: `/Users/gemini/Documents/backup/Kode-cli/src/query.ts`
   - 消息构建和发送
   - 工具调用处理
   - 响应流处理
-  - 上下文管理
 
 #### 模型适配器工厂 / Model Adapter Factory
 - **适配器工厂**: `/Users/gemini/Documents/backup/Kode-cli/src/services/modelAdapterFactory.ts`
   - 模型提供商选择
   - 适配器实例化
-  - 支持的提供商列表
 
-#### 多提供商支持 / Multi-Provider Support
-- **OpenAI 服务**: `/Users/gemini/Documents/backup/Kode-cli/src/services/openai.ts`
-- **其他提供商**: 支持 Mistral、DeepSeek、Kimi、Qwen 等
+#### 流式响应 / Streaming Response
+- **适配器基类**: `/Users/gemini/Documents/backup/Kode-cli/src/services/adapters/base.ts`
+  - `StreamingEvent` 类型
+  - `TokenUsage` 接口
+  - 累积使用量追踪
 
 ### 实现要点 / Implementation Notes
 
 1. **消息格式**: 遵循 Anthropic Messages API 的消息格式
 2. **工具调用**: 使用 `tool_use` 和 `tool_result` 内容块
 3. **流式处理**: 支持流式和非流式两种响应模式
-4. **Token 计算**: 使用 @anthropic-ai/sdk/tokenizer 进行 token 计算
-5. **上下文管理**: 实现智能的上下文窗口管理
+4. **序列化**: 所有类型必须支持 serde 序列化/反序列化
 
 ## Non-Goals
 
-- 本规范不包含具体的模型 API 实现
-- 不包含 token 计数器的具体实现
-- 不包含消息持久化
+- **模型管理器**（由 `implement-model-switching` 变更负责）
+  - 多模型配置管理
+  - 运行时模型切换
+  - 模型指针（default, task, architect 等）
 
-- This specification does not include specific model API implementations
-- Does not include specific token counter implementation
-- Does not include message persistence
+- **消息上下文管理**（由 `implement-context-management` 变更负责）
+  - 消息上下文窗口管理
+  - Token 计数器
+  - 智能裁剪策略
+  - 上下文优先级
+
+- **具体模型 API 实现**（由 `implement-anthropic-service`、`implement-openai-service` 等变更负责）
+
+- **消息持久化**（未来可能添加）
+
+- **Model manager** (handled by `implement-model-switching` change)
+  - Multiple model profile management
+  - Runtime model switching
+  - Model pointers (default, task, architect, etc.)
+
+- **Message context management** (handled by `implement-context-management` change)
+  - Message context window management
+  - Token counter
+  - Smart trimming strategy
+  - Context priority
+
+- **Specific model API implementations** (handled by `implement-anthropic-service`, `implement-openai-service` changes)
+
+- **Message persistence** (may be added in the future)

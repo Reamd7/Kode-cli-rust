@@ -2,4 +2,9 @@
 //!
 //! 提供消息定义和上下文管理功能。
 
-// TODO: 实现消息管理
+pub mod types;
+
+pub use types::{
+    ContentBlock, ImageBlock, Message, MessageContent, Role, TextBlock, ToolResultBlock,
+    ToolUseBlock,
+};

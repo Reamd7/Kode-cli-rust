@@ -14,7 +14,22 @@
 > - **archive phase**: When verifying if a change can be safely archived
 > - **proposal phase**: When evaluating priorities and dependencies for new changes
 
-最后更新 / Last Updated: 2025-12-23
+最后更新 / Last Updated: 2025-12-24
+
+## 📊 当前状态 / Current Status
+
+| Spec | 优先级 | 状态 | 对应变更 | 备注 |
+|------|--------|------|----------|------|
+| config-loading | P0 | ✅ 已完成 | 2024-12-24-implement-config-loading | 配置加载系统 |
+| agent-system | P1 | ✅ 已完成 | 2025-12-24-implement-agent-system | Agent 系统 |
+| message-model | P0 | ⬜ 未开始 | implement-message-model | **下一步建议** |
+| tool-system | P1 | ⬜ 未开始 | implement-tool-system | 工具系统 |
+| anthropic-service | P1 | ⬜ 未开始 | implement-anthropic-service | Anthropic 服务 |
+| openai-service | P1 | ⬜ 未开始 | implement-openai-service | OpenAI 服务 |
+| cli-commands | P2 | ⬜ 未开始 | implement-cli-commands-full | CLI 命令 |
+| basic-cli | P2 | ⬜ 未开始 | implement-basic-cli | 基础 CLI |
+| tui-interface | P2 | ⬜ 未开始 | implement-tui-interface | TUI 界面 |
+| mcp-integration | P3 | ⬜ 未开始 | implement-mcp-client | MCP 集成 |
 
 ## 📋 优先级分类
 
@@ -23,19 +38,16 @@
 
 这些功能是其他所有功能的依赖，没有它们无法构建任何其他内容。
 
-#### 1. config-loading (配置加载系统) - **P0 最高优先级**
+#### 1. config-loading (配置加载系统) - **✅ 已完成**
+- **状态**: 已归档为 `2024-12-24-implement-config-loading`
 - **依赖关系**: 所有其他模块都依赖配置系统
-- **实现原因**:
-  - 配置是整个应用的入口
-  - API keys、模型配置都需要从这里加载
-  - 项目/全局配置分层是核心功能
 - **关键文件**:
   - `GlobalConfig` - 全局配置类型
   - `ProjectConfig` - 项目配置类型
   - 配置加载/保存/迁移逻辑
 - **参考实现**: `/Users/gemini/Documents/backup/Kode-cli/src/utils/config.ts` (940行)
 
-#### 2. message-model (消息与模型抽象) - **P0**
+#### 2. message-model (消息与模型抽象) - **⬜ 下一步建议**
 - **依赖关系**: 依赖 config-loading，被所有服务依赖
 - **实现原因**:
   - 定义了统一的消息格式
@@ -54,7 +66,16 @@
 
 这些服务实现了基础的 AI 对话能力，完成后可以运行最基本的应用。
 
-#### 3. anthropic-service (Anthropic 服务) - **P1**
+#### 3. agent-system (Agent 系统) - **✅ 已完成**
+- **状态**: 已归档为 `2025-12-24-implement-agent-system`
+- **依赖关系**: 依赖 config-loading
+- **关键文件**:
+  - `Agent` 类型定义
+  - `AgentLoader` (五层加载优先级)
+  - `AgentStorage` (数据持久化)
+- **参考实现**: `/Users/gemini/Documents/backup/Kode-cli/src/utils/agents.ts`
+
+#### 4. anthropic-service (Anthropic 服务) - **⬜ 未开始**
 - **依赖关系**: 依赖 message-model
 - **实现原因**:
   - Anthropic Claude 是主要模型提供商
@@ -66,19 +87,18 @@
   - 错误处理和重试
 - **参考实现**: `/Users/gemini/Documents/backup/Kode-cli/src/services/claude.ts`
 
-#### 4. agent-system (Agent 系统) - **P1**
-- **依赖关系**: 依赖 config-loading
+#### 5. openai-service (OpenAI 服务) - **⬜ 未开始**
+- **依赖关系**: 依赖 message-model
 - **实现原因**:
-  - Agent 是 Kode 的核心功能
-  - 支持 YAML + Markdown 格式
-  - 五层加载优先级是关键特性
+  - OpenAI 是重要的备用模型提供商
+  - GPT 系列模型支持
+  - 提供模型选择灵活性
 - **关键文件**:
-  - Agent 定义解析
-  - Agent 加载器
-  - Agent 缓存
-- **参考实现**: `/Users/gemini/Documents/backup/Kode-cli/src/utils/agents.ts`
+  - OpenAI API 客户端
+  - 流式响应处理
+- **参考实现**: `/Users/gemini/Documents/backup/Kode-cli/src/services/openai.ts`
 
-#### 5. tool-system (工具系统) - **P1**
+#### 6. tool-system (工具系统) - **⬜ 未开始**
 - **依赖关系**: 依赖 config-loading
 - **实现原因**:
   - 工具是 AI 的能力扩展
@@ -148,15 +168,17 @@
 ## 📊 依赖关系图
 
 ```
-config-loading (P0) ✓ 已完成 / Completed
+config-loading (P0) ✅ 已完成 / Completed
     ↓
-message-model (P0) ⬜ 未开始 / Not Started
+message-model (P0) ⬜ 未开始 / Not Started ← **下一步建议 / Next Recommended**
     ↓
     ├─→ anthropic-service (P1) ⬜ 未开始 / Not Started
-    ├─→ agent-system (P1) ⬜ 未开始 / Not Started
+    ├─→ openai-service (P1) ⬜ 未开始 / Not Started
+    ├─→ agent-system (P1) ✅ 已完成 / Completed
     └─→ tool-system (P1) ⬜ 未开始 / Not Started
             ↓
         cli-commands (P2) ⬜ 未开始 / Not Started
+        basic-cli (P2) ⬜ 未开始 / Not Started
         tui-interface (P2) ⬜ 未开始 / Not Started
             ↓
         mcp-integration (P3) ⬜ 未开始 / Not Started
@@ -181,23 +203,25 @@ openspec show <spec-id>
 
 ### 阶段 1: 基础设施 (Foundation)
 **目标**: 建立项目基础，实现配置和核心抽象
-- ✅ config-loading (P0)
-- ✅ message-model (P0)
+- ✅ config-loading (P0) - **已完成**
+- ⬜ message-model (P0) - **下一步建议**
 
 ### 阶段 2: 核心服务 (Core Services)
 **目标**: 实现基本的 AI 对话能力
-- ✅ anthropic-service (P1)
-- ✅ agent-system (P1)
-- ✅ tool-system (P1)
+- ✅ agent-system (P1) - **已完成**
+- ⬜ anthropic-service (P1)
+- ⬜ openai-service (P1)
+- ⬜ tool-system (P1)
 
 ### 阶段 3: 用户界面 (User Interface)
 **目标**: 提供完整的用户交互体验
-- ✅ cli-commands (P2)
-- ✅ tui-interface (P2)
+- ⬜ basic-cli (P2)
+- ⬜ cli-commands (P2)
+- ⬜ tui-interface (P2)
 
 ### 阶段 4: 高级特性 (Advanced Features)
 **目标**: 实现扩展功能
-- ✅ mcp-integration (P3)
+- ⬜ mcp-integration (P3)
 
 ---
 
@@ -287,12 +311,22 @@ def select_next_change(pending_changes):
 **示例场景**:
 ```
 待实施变更:
-- implement-mcp-full (P3, 依赖: tool-system)
+- implement-mcp-client (P3, 依赖: tool-system)
 - implement-anthropic-service (P1, 依赖: message-model)
-- implement-agent-system (P1, 依赖: config-loading)
+- implement-tool-system (P1, 依赖: config-loading)
 
-如果 config-loading 已完成，message-model 未完成:
-→ 优先级: implement-agent-system > implement-anthropic-service > implement-mcp-full
+当前状态:
+- config-loading: ✅ 已完成
+- agent-system: ✅ 已完成
+- message-model: ⬜ 未开始
+
+优先级排序:
+1. implement-message-model (P0, 无未完成依赖) ← **最高优先级**
+2. implement-tool-system (P1, 依赖: config-loading ✅)
+3. implement-anthropic-service (P1, 依赖: message-model ⬜)
+4. implement-mcp-client (P3, 依赖: tool-system ⬜)
+
+→ 下一步应实施: implement-message-model
 ```
 
 ---
@@ -380,14 +414,15 @@ openspec list
 
 所有 spec 文件位于: `openspec/specs/<spec-id>/spec.md`
 
-- `config-loading` - `openspec/specs/config-loading/spec.md`
-- `message-model` - `openspec/specs/message-model/spec.md`
-- `anthropic-service` - `openspec/specs/anthropic-service/spec.md`
-- `agent-system` - `openspec/specs/agent-system/spec.md`
-- `tool-system` - `openspec/specs/tool-system/spec.md`
-- `cli-commands` - `openspec/specs/cli-commands/spec.md`
-- `tui-interface` - `openspec/specs/tui-interface/spec.md`
-- `mcp-integration` - `openspec/specs/mcp-integration/spec.md`
+- `config-loading` - `openspec/specs/config-loading/spec.md` ✅
+- `agent-system` - `openspec/specs/agent-system/spec.md` ✅
+- `message-model` - `openspec/specs/message-model/spec.md` ⬜ **下一步**
+- `tool-system` - `openspec/specs/tool-system/spec.md` ⬜
+- `anthropic-service` - `openspec/specs/anthropic-service/spec.md` ⬜
+- `openai-service` - `openspec/specs/openai-service/spec.md` ⬜
+- `cli-commands` - `openspec/specs/cli-commands/spec.md` ⬜
+- `tui-interface` - `openspec/specs/tui-interface/spec.md` ⬜
+- `mcp-integration` - `openspec/specs/mcp-integration/spec.md` ⬜
 
 ---
 

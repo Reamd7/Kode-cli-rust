@@ -10,38 +10,47 @@ The configuration system is responsible for loading and managing Kode configurat
 
 ### Requirement: 配置优先级 / Configuration Priority
 
-系统应按以下优先级处理配置（从高到低）：
-
 The system SHALL handle configuration with the following priority (from highest to lowest):
+/ 系统应按以下优先级处理配置（从高到低）：
 
-1. **环境变量 / Environment Variables** (最高优先级 / Highest Priority)
+1. **Environment Variables / 环境变量** (Highest / 最高优先级)
    - `OPENAI_API_KEY`
    - `ANTHROPIC_API_KEY`
    - `KODE_CONFIG_DIR`
    - `CLAUDE_CONFIG_DIR`
 
-2. **运行时标志 / Runtime Flags** (CLI 参数)
+2. **Runtime Flags / 运行时标志** (CLI parameters / CLI 参数)
    - `--verbose`
    - `--model`
-   - 其他 CLI 参数
+   - Other CLI parameters / 其他 CLI 参数
 
-3. **项目配置 / Project Configuration**
-   - 存储在全局配置的 `projects` 字段中
-   - Key 为当前目录的绝对路径
+3. **Project Configuration / 项目配置**
+   - Stored in the `projects` field of global configuration / 存储在全局配置的 `projects` 字段中
+   - Key is the absolute path of current directory / Key 为当前目录的绝对路径
 
-4. **全局配置 / Global Configuration**
-   - 从 `~/.kode.json` 加载
-   - 可通过环境变量自定义路径
+4. **Global Configuration / 全局配置**
+   - Loaded from `~/.kode.json` / 从 `~/.kode.json` 加载
+   - Path can be customized via environment variable / 可通过环境变量自定义路径
 
-5. **默认值 / Default Values** (最低优先级 / Lowest Priority)
+5. **Default Values / 默认值** (Lowest / 最低优先级)
    - `DEFAULT_GLOBAL_CONFIG`
    - `DEFAULT_PROJECT_CONFIG`
 
+#### Scenario: 按优先级获取配置值 / Get Configuration Value by Priority
+- **WHEN** 需要获取配置值且多个来源都有定义时
+- **THEN** 按优先级从高到低查找（环境变量 > CLI > 项目 > 全局 > 默认）
+- **AND** 返回第一个找到的非空值
+- **AND** 未找到时返回默认值
+
+- **WHEN** a configuration value is needed and defined in multiple sources
+- **THEN** search by priority from highest to lowest (env > CLI > project > global > default)
+- **AND** return the first non-empty value found
+- **AND** return default value if not found
+
 ### Requirement: 配置文件加载 / Configuration File Loading
 
-系统应从 `~/.kode.json` 加载全局配置，项目配置存储在其中。
-
 The system SHALL load global configuration from `~/.kode.json`, with project configurations stored within it.
+/ 系统应从 `~/.kode.json` 加载全局配置，项目配置存储在其中。
 
 #### Scenario: 加载全局配置 / Load Global Configuration
 - **WHEN** 用户启动 Kode 应用时
@@ -78,9 +87,8 @@ The system SHALL load global configuration from `~/.kode.json`, with project con
 
 ### Requirement: 配置序列化 / Configuration Serialization
 
-系统应支持 JSON 序列化和反序列化，使用 camelCase 字段名。
-
 The system SHALL support JSON serialization and deserialization with camelCase field names.
+/ 系统应支持 JSON 序列化和反序列化，使用 camelCase 字段名。
 
 #### Scenario: JSON 解析 / JSON Parsing
 - **WHEN** 读取有效的 JSON 配置文件时
@@ -104,9 +112,8 @@ The system SHALL support JSON serialization and deserialization with camelCase f
 
 ### Requirement: 环境变量支持 / Environment Variables Support
 
-系统应支持通过环境变量覆盖配置。
-
 The system SHALL support overriding configuration through environment variables.
+/ 系统应支持通过环境变量覆盖配置。
 
 #### Scenario: API Key 环境变量 / API Key Environment Variables
 - **WHEN** 需要获取 OpenAI API Key 时
@@ -128,9 +135,8 @@ The system SHALL support overriding configuration through environment variables.
 
 ### Requirement: 配置保存 / Configuration Saving
 
-系统应支持保存配置到适当的文件路径。
-
 The system SHALL support saving configuration to the appropriate file path.
+/ 系统应支持保存配置到适当的文件路径。
 
 #### Scenario: 保存全局配置 / Save Global Configuration
 - **WHEN** 用户修改全局配置并保存时
@@ -158,9 +164,8 @@ The system SHALL support saving configuration to the appropriate file path.
 
 ### Requirement: 配置迁移 / Configuration Migration
 
-系统应支持从旧版本配置格式迁移。
-
 The system SHALL support migration from old version configuration formats.
+/ 系统应支持从旧版本配置格式迁移。
 
 #### Scenario: 移除 model profiles 的 id 字段 / Remove id Field from Model Profiles
 - **WHEN** 加载包含旧格式 `modelProfiles` 的配置时

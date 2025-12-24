@@ -251,6 +251,7 @@ mod tests {
 - 必须使用英文结构标题：`## Purpose`、`## Requirements`、`### Requirement:`、`#### Scenario:`
 - 需求描述必须包含 `SHALL` 或 `MUST` 关键字
 - 每个需求至少需要一个 Scenario 块
+- **重要**: `SHALL`/`MUST` 关键字必须位于需求描述的**英文部分**（验证器只检查英文文本）
 
 #### 双语格式示例
 
@@ -258,19 +259,40 @@ mod tests {
 ## Purpose
 
 中文描述功能目的...
+English description of purpose...
 
 ## Requirements
 
-### Requirement: 功能名称
+### Requirement: 功能名称 / Feature Name
 The system SHALL provide [功能描述 in English with SHALL/MUST].
+/ 中文翻译说明...
 
-中文翻译说明...
-
-#### Scenario: 场景名称
+#### Scenario: 场景名称 / Scenario Name
 - **WHEN** 中文场景条件描述
 - **THEN** 中文预期结果描述
 - **AND** 中文附加条件（可选）
+
+- **WHEN** English scenario condition
+- **THEN** English expected result
+- **AND** English additional conditions (optional)
 ```
+
+#### 关键格式规则
+
+| 规则 | 说明 | 示例 |
+|------|------|------|
+| **SHALL/MUST 位置** | 必须在英文描述中，验证器只检查英文 | ✅ `The system SHALL load config...`<br>❌ `系统应加载配置... The system SHALL...` |
+| **英文在前** | 英文描述在前，中文翻译用 `/` 前缀 | ✅ `The system SHALL load config. / 系统应加载配置` |
+| **Scenario 标题** | 必须使用 `#### Scenario:` | ✅ `#### Scenario: 加载配置` |
+| **WHEN/THEN/AND** | 必须大写，加粗 | ✅ `- **WHEN** condition` |
+
+#### 常见错误与修复
+
+| 错误 | 原因 | 修复方法 |
+|------|------|----------|
+| `Requirement must contain SHALL or MUST` | SHALL/MUST 在中文部分 | 将英文描述移到前面 |
+| `Requirement must have at least one scenario` | 缺少 Scenario 块 | 添加 `#### Scenario:` 部分 |
+| `Scenarios must use level-4 headers` | 使用了 bullet 或粗体 | 改用 `#### Scenario:` |
 
 #### 文件格式规范
 
@@ -306,6 +328,7 @@ npx openspec show <change-id>
 - **MODIFIED Requirements**: 必须包含完整的更新文本（不仅仅是变更部分）
 - **Scenario 格式**: 必须使用 `#### Scenario:` (4 个井号)，不是 bullet 或粗体
 - **ADDED vs MODIFIED**: 新增独立功能用 ADDED，修改现有需求行为用 MODIFIED
+- **SHALL/MUST 位置**: 英文描述必须在最前面，包含 SHALL/MUST 关键字
 
 **参考**: [OpenSpec 官方文档](https://github.com/Fission-AI/OpenSpec)
 

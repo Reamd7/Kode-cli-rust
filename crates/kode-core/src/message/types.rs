@@ -2,10 +2,10 @@
 //!
 //! 定义 AI 对话中使用的消息结构和内容块类型。
 
+use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use std::collections::HashSet;
 use uuid::Uuid;
-use chrono::{DateTime, Utc};
 
 /// 消息角色
 ///
@@ -112,6 +112,50 @@ pub struct UserMessageOptions {
     pub koding_context: Option<String>,
 }
 
+/// Token 使用情况
+///
+/// 用于追踪消息的 token 消耗。
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq, Default)]
+pub struct TokenUsage {
+    /// 输入 token 数量
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub input_tokens: Option<usize>,
+
+    /// 输出 token 数量
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub output_tokens: Option<usize>,
+
+    /// 缓存创建输入 token 数量
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub cache_creation_input_tokens: Option<usize>,
+
+    /// 缓存读取输入 token 数量
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub cache_read_input_tokens: Option<usize>,
+}
+
+impl TokenUsage {
+    /// 创建新的 token 使用记录
+    pub fn new() -> Self {
+        Self::default()
+    }
+
+    /// 计算总 token 数量
+    pub fn total(&self) -> usize {
+        self.input_tokens.unwrap_or(0)
+            + self.output_tokens.unwrap_or(0)
+            + self.cache_creation_input_tokens.unwrap_or(0)
+            + self.cache_read_input_tokens.unwrap_or(0)
+    }
+
+    /// 计算输入 token 总数（包含缓存）
+    pub fn total_input(&self) -> usize {
+        self.input_tokens.unwrap_or(0)
+            + self.cache_creation_input_tokens.unwrap_or(0)
+            + self.cache_read_input_tokens.unwrap_or(0)
+    }
+}
+
 /// 消息结构
 ///
 /// 表示 AI 对话中的单条消息。
@@ -153,6 +197,10 @@ pub struct Message {
     /// 用户消息选项（仅用户消息）
     #[serde(skip_serializing_if = "Option::is_none")]
     pub options: Option<UserMessageOptions>,
+
+    /// Token 使用情况（仅助手消息）
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub usage: Option<TokenUsage>,
 }
 
 impl Default for Message {
@@ -168,6 +216,7 @@ impl Default for Message {
             response_id: None,
             tool_use_result: None,
             options: None,
+            usage: None,
         }
     }
 }
@@ -270,6 +319,12 @@ impl Message {
     /// 设置内容为 Blocks
     pub fn with_blocks(mut self, blocks: Vec<ContentBlock>) -> Self {
         self.content = MessageContent::Blocks(blocks);
+        self
+    }
+
+    /// 设置 token 使用情况
+    pub fn with_usage(mut self, usage: TokenUsage) -> Self {
+        self.usage = Some(usage);
         self
     }
 }
@@ -391,13 +446,7 @@ mod tests {
         let msg = Message::assistant("Running...");
         let ids = HashSet::from(["tool-1".to_string(), "tool-2".to_string()]);
 
-        let progress = ProgressMessage::new(
-            &msg,
-            "tool-123",
-            &ids,
-            &[],
-            &[],
-        );
+        let progress = ProgressMessage::new(&msg, "tool-123", &ids, &[], &[]);
 
         assert_eq!(progress.tool_use_id, "tool-123");
         assert_eq!(progress.sibling_tool_use_ids.len(), 2);

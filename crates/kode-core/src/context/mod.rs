@@ -2,4 +2,11 @@
 //!
 //! 提供消息上下文窗口管理功能。
 
-// TODO: 实现上下文管理
+pub mod freshness;
+pub mod manager;
+
+pub use freshness::{FileFreshnessService, FileTimestamp, FreshnessStatus};
+pub use manager::{
+    MessageContextManager, MessagePriority, RetentionPreference, RecoveredFile, TokenCounter,
+    TrimmingStrategy,
+};

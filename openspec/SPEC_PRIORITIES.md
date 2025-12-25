@@ -14,7 +14,7 @@
 > - **archive phase**: When verifying if a change can be safely archived
 > - **proposal phase**: When evaluating priorities and dependencies for new changes
 
-最后更新 / Last Updated: 2025-12-24
+最后更新 / Last Updated: 2025-12-25
 
 ## 📊 当前状态 / Current Status
 
@@ -22,7 +22,7 @@
 |------|--------|------|----------|------|
 | config-loading | P0 | ✅ 已完成 | 2024-12-24-implement-config-loading | 配置加载系统 |
 | agent-system | P1 | ✅ 已完成 | 2025-12-24-implement-agent-system | Agent 系统 |
-| message-model | P0 | ✅ 已完成 | 2025-12-24-implement-message-model | 消息与模型抽象 |
+| message-model | P0 | ✅ 已完成 | 2025-12-24-implement-message-model, 2025-12-25-implement-context-management | 消息与模型抽象 |
 | tool-system | P1 | ⬜ 未开始 | implement-tool-system | 工具系统 |
 | anthropic-service | P1 | ⬜ 未开始 | implement-anthropic-service | Anthropic 服务 |
 | openai-service | P1 | ⬜ 未开始 | implement-openai-service | OpenAI 服务 |

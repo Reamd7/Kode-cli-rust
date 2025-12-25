@@ -31,6 +31,34 @@
 | tui-interface | P2 | ⬜ 未开始 | implement-tui-interface | TUI 界面 |
 | mcp-integration | P3 | ⬜ 未开始 | implement-mcp-client | MCP 集成 |
 
+---
+
+## 📋 活跃变更清单 / Active Change Proposals
+
+| Change ID | 优先级 | 依赖 Spec | 依赖状态 | 描述 |
+|-----------|--------|-----------|----------|------|
+| **P1 - 核心服务** |
+| implement-file-tools | P1 | 无 | ✅ Ready | Tool trait + ToolRegistry + Read/Write/Edit |
+| implement-anthropic-service | P1 | message-model ✅ | ✅ Ready | Anthropic API 客户端 |
+| implement-openai-service | P1 | message-model ✅ | ✅ Ready | OpenAI 兼容服务 |
+| implement-bash-tool | P1 | tool-system ⬜ | 🔴 Blocked | Bash 工具 |
+| implement-search-tools | P1 | tool-system ⬜ | 🔴 Blocked | Grep + Glob 工具 |
+| implement-task-tool | P1 | tool-system ⬜, agent-system ✅ | 🔴 Blocked | 任务委托工具 |
+| implement-streaming-response | P1 | anthropic-service ⬜ | 🔴 Blocked | 流式响应 SSE |
+| **P2 - 用户界面** |
+| implement-basic-cli | P2 | P1 功能 ⬜ | 🔴 Blocked | 基础 CLI (run, config, agents) |
+| implement-tui-interface | P2 | P1 功能 ⬜ | 🔴 Blocked | Ratatui 交互界面 |
+| implement-cli-commands-full | P2 | basic-cli ⬜ | 🔴 Blocked | CLI 命令完善 |
+| implement-model-switching | P2 | P1+P2 ⬜ | 🔴 Blocked | 运行时模型切换 |
+| implement-permission-system | P2 | P1+P2 ⬜ | 🔴 Blocked | 权限确认系统 |
+| implement-ui-enhancements | P2 | tui-interface ⬜ | 🔴 Blocked | 语法高亮、状态栏 |
+| **P3 - 高级特性** |
+| implement-mcp-client | P3 | tool-system ⬜ | 🔴 Blocked | MCP 客户端基础 |
+| implement-mcp-full | P3 | mcp-client ⬜ | 🔴 Blocked | MCP 完整功能 |
+| implement-performance-optimization | P3 | P1 功能 ⬜ | 🔴 Blocked | 并发执行、缓存优化 |
+
+---
+
 ## 📋 优先级分类
 
 ### 🔴 P0 - 核心基础 (Critical Foundation)
@@ -47,7 +75,8 @@
   - 配置加载/保存/迁移逻辑
 - **参考实现**: `/Users/gemini/Documents/backup/Kode-cli/src/utils/config.ts` (940行)
 
-#### 2. message-model (消息与模型抽象) - **⬜ 下一步建议**
+#### 2. message-model (消息与模型抽象) - **✅ 已完成**
+- **状态**: 已归档为 `2025-12-24-implement-message-model`
 - **依赖关系**: 依赖 config-loading，被所有服务依赖
 - **实现原因**:
   - 定义了统一的消息格式
@@ -170,15 +199,15 @@
 ```
 config-loading (P0) ✅ 已完成 / Completed
     ↓
-message-model (P0) ⬜ 未开始 / Not Started ← **下一步建议 / Next Recommended**
+message-model (P0) ✅ 已完成 / Completed
     ↓
     ├─→ anthropic-service (P1) ⬜ 未开始 / Not Started
     ├─→ openai-service (P1) ⬜ 未开始 / Not Started
     ├─→ agent-system (P1) ✅ 已完成 / Completed
     └─→ tool-system (P1) ⬜ 未开始 / Not Started
             ↓
-        cli-commands (P2) ⬜ 未开始 / Not Started
         basic-cli (P2) ⬜ 未开始 / Not Started
+        cli-commands (P2) ⬜ 未开始 / Not Started
         tui-interface (P2) ⬜ 未开始 / Not Started
             ↓
         mcp-integration (P3) ⬜ 未开始 / Not Started
@@ -204,7 +233,7 @@ openspec show <spec-id>
 ### 阶段 1: 基础设施 (Foundation)
 **目标**: 建立项目基础，实现配置和核心抽象
 - ✅ config-loading (P0) - **已完成**
-- ⬜ message-model (P0) - **下一步建议**
+- ✅ message-model (P0) - **已完成**
 
 ### 阶段 2: 核心服务 (Core Services)
 **目标**: 实现基本的 AI 对话能力
@@ -318,15 +347,14 @@ def select_next_change(pending_changes):
 当前状态:
 - config-loading: ✅ 已完成
 - agent-system: ✅ 已完成
-- message-model: ⬜ 未开始
+- message-model: ✅ 已完成
 
 优先级排序:
-1. implement-message-model (P0, 无未完成依赖) ← **最高优先级**
-2. implement-tool-system (P1, 依赖: config-loading ✅)
-3. implement-anthropic-service (P1, 依赖: message-model ⬜)
-4. implement-mcp-client (P3, 依赖: tool-system ⬜)
+1. implement-tool-system (P1, 依赖: config-loading ✅) ← **最高优先级**
+2. implement-anthropic-service (P1, 依赖: message-model ✅)
+3. implement-mcp-client (P3, 依赖: tool-system ⬜)
 
-→ 下一步应实施: implement-message-model
+→ 下一步应实施: implement-tool-system
 ```
 
 ---
@@ -416,7 +444,7 @@ openspec list
 
 - `config-loading` - `openspec/specs/config-loading/spec.md` ✅
 - `agent-system` - `openspec/specs/agent-system/spec.md` ✅
-- `message-model` - `openspec/specs/message-model/spec.md` ⬜ **下一步**
+- `message-model` - `openspec/specs/message-model/spec.md` ✅
 - `tool-system` - `openspec/specs/tool-system/spec.md` ⬜
 - `anthropic-service` - `openspec/specs/anthropic-service/spec.md` ⬜
 - `openai-service` - `openspec/specs/openai-service/spec.md` ⬜

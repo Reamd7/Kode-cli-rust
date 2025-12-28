@@ -22,6 +22,7 @@ Thumbs.db
 .kode.json
 .env
 .factory/mcp.json
+opencode.jsonc
 
 # Logs
 *.log

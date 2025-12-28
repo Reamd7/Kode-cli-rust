@@ -1,11 +1,12 @@
 //! Tool trait 定义
 
+use crate::events::FileOperationHistory;
 use crate::validation::JsonSchemaValidator;
 use anyhow::Result;
 use async_trait::async_trait;
 use serde_json::Value;
 use std::collections::HashMap;
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 use tokio_util::sync::CancellationToken;
 
 /// 取消错误
@@ -89,6 +90,8 @@ pub struct ToolContext {
     pub safe_mode: bool,
     /// 取消令牌
     pub cancellation_token: Option<CancellationToken>,
+    /// 文件操作历史记录
+    pub file_operations: FileOperationHistory,
 }
 
 impl ToolContext {
@@ -99,6 +102,7 @@ impl ToolContext {
             read_timestamps: HashMap::new(),
             safe_mode: false,
             cancellation_token: None,
+            file_operations: FileOperationHistory::new(),
         }
     }
 
@@ -109,6 +113,7 @@ impl ToolContext {
             read_timestamps: HashMap::new(),
             safe_mode: true,
             cancellation_token: None,
+            file_operations: FileOperationHistory::new(),
         }
     }
 
@@ -158,6 +163,21 @@ impl ToolContext {
             // 但这会阻塞，所以这里只检查状态
         }
         Ok(())
+    }
+
+    /// 记录文件操作
+    pub fn track_operation(&mut self, event: crate::events::FileOperationEvent) {
+        self.file_operations.add(event);
+    }
+
+    /// 获取文件操作历史
+    pub fn get_file_history(&self, path: &Path) -> Vec<crate::events::FileOperationEvent> {
+        self.file_operations.get_file_history(path)
+    }
+
+    /// 生成操作报告
+    pub fn generate_operation_report(&self) -> String {
+        self.file_operations.generate_report()
     }
 }
 

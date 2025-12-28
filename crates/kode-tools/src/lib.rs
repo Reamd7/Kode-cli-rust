@@ -32,7 +32,11 @@ pub mod file_edit;
 /// 参数验证框架
 pub mod validation;
 
+/// 事件系统
+pub mod events;
+
 // 重新导出主要类型
+pub use events::{FileOperationEvent, FileOperationHistory, FileOperationType};
 pub use file_edit::FileEditTool;
 pub use file_read::FileReadTool;
 pub use file_utils::{LineEnding, ReadResult};

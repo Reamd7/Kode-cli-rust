@@ -8,6 +8,9 @@
 // Anthropic API 服务
 pub mod anthropic;
 
+// OpenAI API 服务
+pub mod openai;
+
 // VCR 录制/回放支持
 pub mod vcr;
 
@@ -17,4 +20,5 @@ pub mod vcr;
 
 // Re-export commonly used types
 pub use anthropic::{AnthropicConfig, AnthropicError, AnthropicService};
+pub use openai::{OpenAIConfig, OpenAIError, OpenAIService};
 pub use vcr::{Vcr, VcrBuilder, VcrConfig, VcrMode};

@@ -26,7 +26,9 @@ use std::collections::HashMap;
 ///
 /// ```
 /// use kode_core::config::migration::migrate_model_profiles_remove_id;
-/// let config = get_global_config().await?;
+/// use kode_core::config::types::GlobalConfig;
+///
+/// let config = GlobalConfig::default();
 /// let migrated = migrate_model_profiles_remove_id(config);
 /// ```
 pub fn migrate_model_profiles_remove_id(mut config: GlobalConfig) -> GlobalConfig {
@@ -101,9 +103,13 @@ pub fn migrate_model_profiles_remove_id(mut config: GlobalConfig) -> GlobalConfi
 ///
 /// # Examples
 ///
-/// ```
+/// ```no_run
 /// use kode_core::config::migration::enable_configs;
+///
+/// # async fn example() -> kode_core::error::Result<()> {
 /// enable_configs().await?;
+/// # Ok(())
+/// # }
 /// ```
 pub async fn enable_configs() -> Result<(), Error> {
     // 在 Rust 版本中，我们不需要像 TypeScript 那样控制配置读取的时序

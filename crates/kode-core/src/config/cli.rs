@@ -10,6 +10,9 @@ use crate::error::Error;
 use serde::{de::DeserializeOwned, Serialize};
 use serde_json::Value;
 
+#[cfg(test)]
+use serial_test::serial;
+
 /// 全局配置键列表
 ///
 /// 这些键可以在全局配置中通过 CLI 修改
@@ -371,7 +374,12 @@ mod tests {
     }
 
     #[tokio::test]
+    #[serial_test::serial(kode_config_dir)]
     async fn test_set_and_get_config() {
+        // 使用临时配置目录，避免影响实际配置
+        let temp_dir = tempfile::tempdir().unwrap();
+        std::env::set_var("KODE_CONFIG_DIR", temp_dir.path());
+
         // 设置主题
         let result = set_config_for_cli("theme", "\"dark\"", true).await;
         assert!(result.is_ok());
@@ -379,10 +387,19 @@ mod tests {
         // 读取主题
         let value = get_config_for_cli("theme", true).await.unwrap();
         assert!(value.contains("dark"));
+
+        // 保持 temp_dir 直到作用域结束
+        drop(temp_dir);
+        std::env::remove_var("KODE_CONFIG_DIR");
     }
 
     #[tokio::test]
+    #[serial_test::serial(kode_config_dir)]
     async fn test_delete_config() {
+        // 使用临时配置目录，避免影响实际配置
+        let temp_dir = tempfile::tempdir().unwrap();
+        std::env::set_var("KODE_CONFIG_DIR", temp_dir.path());
+
         // 先设置
         let _ = set_config_for_cli("theme", "\"dark\"", true).await;
 
@@ -394,6 +411,8 @@ mod tests {
         let value = get_config_for_cli("theme", true).await.unwrap();
         // 默认值应该是 null
         assert!(value == "null");
+
+        std::env::remove_var("KODE_CONFIG_DIR");
     }
 
     #[tokio::test]

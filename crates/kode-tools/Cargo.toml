@@ -21,6 +21,7 @@ serde_json = { workspace = true }
 
 # Error handling
 anyhow = { workspace = true }
+thiserror = { workspace = true }
 
 # File operations
 glob = { workspace = true }
@@ -28,8 +29,26 @@ walkdir = { workspace = true }
 ignore = { workspace = true }
 regex = { workspace = true }
 
+# Encoding
+encoding_rs = "0.8"
+
+# Diff
+similar = "2.5"
+
+# Base64
+base64 = "0.22"
+
 # Utilities
 uuid = { workspace = true }
 
+[features]
+default = []
+image = ["dep:image"]
+
+[dependencies.image]
+version = "0.25"
+optional = true
+
 [dev-dependencies]
 tokio = { workspace = true, features = ["test-util"] }
+tempfile = { workspace = true }

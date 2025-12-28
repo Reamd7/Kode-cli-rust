@@ -6,6 +6,9 @@ use crate::config::api::{get_global_config, save_global_config};
 use crate::error::Error;
 use std::path::Path;
 
+#[cfg(test)]
+use serial_test::serial;
+
 /// 规范化 API Key
 ///
 /// 截取 API Key 的最后 20 个字符，用于安全显示
@@ -123,15 +126,6 @@ mod tests {
         let result = is_auto_updater_disabled().await;
         assert!(result.is_ok());
     }
-
-    #[tokio::test]
-    async fn test_get_or_create_user_id() {
-        let user_id = get_or_create_user_id().await.unwrap();
-        // 第二次调用应该返回相同的 ID
-        let user_id2 = get_or_create_user_id().await.unwrap();
-        assert_eq!(user_id, user_id2);
-        assert!(!user_id.is_empty());
-    }
 }
 
 /// 检查信任对话框是否已接受
@@ -190,10 +184,36 @@ mod tests_trust {
     use super::*;
 
     #[tokio::test]
+    #[serial_test::serial(kode_config_dir)]
     async fn test_check_has_trust_dialog_accepted() {
-        // 这个测试依赖于实际的配置文件
+        // 使用临时配置目录，避免影响实际配置
+        let temp_dir = tempfile::tempdir().unwrap();
+        std::env::set_var("KODE_CONFIG_DIR", temp_dir.path());
+
+        // 这个测试现在使用临时配置
         let result = check_has_trust_dialog_accepted().await;
         assert!(result.is_ok());
-        // 结果可能是 true 或 false，取决于实际配置
+        // 结果应该是 false（新环境）
+        assert_eq!(result.unwrap(), false);
+
+        std::env::remove_var("KODE_CONFIG_DIR");
+    }
+
+    #[tokio::test]
+    #[serial_test::serial(kode_config_dir)]
+    async fn test_get_or_create_user_id() {
+        // 使用临时配置目录，避免影响实际配置
+        let temp_dir = tempfile::tempdir().unwrap();
+        std::env::set_var("KODE_CONFIG_DIR", temp_dir.path());
+
+        let user_id = get_or_create_user_id().await.unwrap();
+        // 第二次调用应该返回相同的 ID
+        let user_id2 = get_or_create_user_id().await.unwrap();
+        assert_eq!(user_id, user_id2);
+        assert!(!user_id.is_empty());
+
+        // 保持 temp_dir 直到作用域结束
+        drop(temp_dir);
+        std::env::remove_var("KODE_CONFIG_DIR");
     }
 }

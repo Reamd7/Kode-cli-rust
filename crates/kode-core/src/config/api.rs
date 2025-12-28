@@ -9,6 +9,9 @@ use crate::error::Error;
 use std::collections::HashMap;
 use tokio::fs;
 
+#[cfg(test)]
+use serial_test::serial;
+
 /// 获取全局配置
 ///
 /// 从配置文件路径（考虑环境变量）加载全局配置。
@@ -239,19 +242,33 @@ mod tests {
     use super::*;
 
     #[tokio::test]
+    #[serial_test::serial(kode_config_dir)]
     async fn test_get_global_config_default() {
+        // 使用临时配置目录，避免影响实际配置
+        let temp_dir = tempfile::tempdir().unwrap();
+        std::env::set_var("KODE_CONFIG_DIR", temp_dir.path());
+
         let config = get_global_config().await.unwrap();
         // 应该返回默认配置
         assert_eq!(config.num_startups, 0);
         assert_eq!(config.verbose, false);
+
+        std::env::remove_var("KODE_CONFIG_DIR");
     }
 
     #[tokio::test]
+    #[serial_test::serial(kode_config_dir)]
     async fn test_get_current_project_config_default() {
+        // 使用临时配置目录，避免影响实际配置
+        let temp_dir = tempfile::tempdir().unwrap();
+        std::env::set_var("KODE_CONFIG_DIR", temp_dir.path());
+
         let config = get_current_project_config().await.unwrap();
         // 应该返回默认项目配置
         assert!(config.allowed_tools.is_empty());
         assert!(config.context.is_empty());
+
+        std::env::remove_var("KODE_CONFIG_DIR");
     }
 
     #[tokio::test]

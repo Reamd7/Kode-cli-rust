@@ -319,7 +319,7 @@ mod tests {
     }
 
     #[tokio::test]
-    #[serial_test::serial]
+    #[serial_test::serial(kode_config_dir)]
     async fn test_write_and_read_agent_data() {
         // 使用临时目录进行测试
         let temp_dir = TempDir::new().unwrap();
@@ -342,11 +342,12 @@ mod tests {
         assert_eq!(read_data.unwrap(), data);
 
         // 清理
+        drop(temp_dir);
         std::env::remove_var("KODE_CONFIG_DIR");
     }
 
     #[tokio::test]
-    #[serial_test::serial]
+    #[serial_test::serial(kode_config_dir)]
     async fn test_read_nonexistent_agent_data() {
         let temp_dir = TempDir::new().unwrap();
         std::env::set_var("KODE_CONFIG_DIR", temp_dir.path());
@@ -354,11 +355,12 @@ mod tests {
         let result: Option<serde_json::Value> = read_agent_data("nonexistent-agent").await.unwrap();
         assert!(result.is_none());
 
+        drop(temp_dir);
         std::env::remove_var("KODE_CONFIG_DIR");
     }
 
     #[tokio::test]
-    #[serial_test::serial]
+    #[serial_test::serial(kode_config_dir)]
     async fn test_write_creates_config_directory() {
         let temp_dir = TempDir::new().unwrap();
         let config_dir = temp_dir.path().join("nested/config");
@@ -379,11 +381,12 @@ mod tests {
         let file_path = config_dir.join(format!("{}-agent-test-agent.json", get_session_id()));
         assert!(file_path.exists());
 
+        drop(temp_dir);
         std::env::remove_var("KODE_CONFIG_DIR");
     }
 
     #[tokio::test]
-    #[serial_test::serial]
+    #[serial_test::serial(kode_config_dir)]
     async fn test_write_overwrites_existing_data() {
         let temp_dir = TempDir::new().unwrap();
         std::env::set_var("KODE_CONFIG_DIR", temp_dir.path());
@@ -405,6 +408,7 @@ mod tests {
         assert!(data.is_some());
         assert_eq!(data.unwrap()["version"], 2);
 
+        drop(temp_dir);
         std::env::remove_var("KODE_CONFIG_DIR");
     }
 
@@ -424,7 +428,7 @@ mod tests {
     }
 
     #[tokio::test]
-    #[serial_test::serial]
+    #[serial_test::serial(kode_config_dir)]
     async fn test_structured_data_serialization() {
         use serde::{Deserialize, Serialize};
 
@@ -448,6 +452,8 @@ mod tests {
         assert!(read_data.is_some());
         assert_eq!(read_data.unwrap(), data);
 
+        // 保持 temp_dir 直到作用域结束
+        drop(temp_dir);
         std::env::remove_var("KODE_CONFIG_DIR");
     }
 }

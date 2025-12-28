@@ -289,7 +289,8 @@ impl ModelAdapter for AnthropicService {
         system_prompt: Option<String>,
         max_tokens: usize,
     ) -> Result<ModelResponse> {
-        self.send_message_with_retry(messages, system_prompt, max_tokens, None).await
+        self.send_message_with_retry(messages, system_prompt, max_tokens, None)
+            .await
     }
 
     async fn stream_message(
@@ -358,7 +359,8 @@ impl AnthropicService {
                                 return self.parse_response(api_response);
                             }
                             Err(e) => {
-                                last_error = Some(anyhow::anyhow!("Failed to parse response: {}", e));
+                                last_error =
+                                    Some(anyhow::anyhow!("Failed to parse response: {}", e));
                             }
                         }
                     } else if response.status() == 429 || response.status().is_server_error() {
@@ -395,7 +397,9 @@ impl AnthropicService {
         }
 
         Err(kode_core::error::Error::ModelRequestError(
-            last_error.unwrap_or_else(|| anyhow::anyhow!("Unknown error")).to_string(),
+            last_error
+                .unwrap_or_else(|| anyhow::anyhow!("Unknown error"))
+                .to_string(),
         ))
     }
 
@@ -461,7 +465,9 @@ impl AnthropicService {
         }
 
         Err(kode_core::error::Error::ModelRequestError(
-            last_error.unwrap_or_else(|| anyhow::anyhow!("Unknown error")).to_string(),
+            last_error
+                .unwrap_or_else(|| anyhow::anyhow!("Unknown error"))
+                .to_string(),
         ))
     }
 
@@ -487,18 +493,14 @@ impl AnthropicService {
                     buffer.extend(&data);
 
                     // Process complete SSE events
-                    while let Some(pos) =
-                        buffer.windows(2).position(|w| w == [b'\n', b'\n'])
-                    {
-                        let event_data =
-                            String::from_utf8_lossy(&buffer[..pos]).into_owned();
+                    while let Some(pos) = buffer.windows(2).position(|w| w == [b'\n', b'\n']) {
+                        let event_data = String::from_utf8_lossy(&buffer[..pos]).into_owned();
                         buffer.drain(..=pos + 1);
 
                         // Parse SSE format
                         for line in event_data.lines() {
                             if line.starts_with("data:") {
-                                if let Some(json_str) =
-                                    line.strip_prefix("data:").map(|s| s.trim())
+                                if let Some(json_str) = line.strip_prefix("data:").map(|s| s.trim())
                                 {
                                     if json_str == "[DONE]" {
                                         // Send final message stop
@@ -531,8 +533,10 @@ impl AnthropicService {
                                                             .insert(block.index, String::new());
 
                                                         // 发送工具使用事件
-                                                        if let (Some(tool_name), Some(tool_use_id)) =
-                                                            (block.name, block.id)
+                                                        if let (
+                                                            Some(tool_name),
+                                                            Some(tool_use_id),
+                                                        ) = (block.name, block.id)
                                                         {
                                                             tx.send(Ok(
                                                                 kode_core::model::StreamChunk::tool_use(
@@ -570,9 +574,10 @@ impl AnthropicService {
                                                         delta.input_json_delta
                                                     {
                                                         // Handle JSON delta for tool use
-                                                        if let (Some(index), Some(block_type)) =
-                                                            (current_block_index, &current_block_type)
-                                                        {
+                                                        if let (Some(index), Some(block_type)) = (
+                                                            current_block_index,
+                                                            &current_block_type,
+                                                        ) {
                                                             if block_type == "tool_use" {
                                                                 if let Some(buffer) =
                                                                     json_buffers.get_mut(&index)
@@ -637,7 +642,8 @@ impl AnthropicService {
                                                                     usage.input_tokens
                                                                         + usage.output_tokens,
                                                                 ),
-                                                                thinking_tokens: usage.thinking_tokens,
+                                                                thinking_tokens: usage
+                                                                    .thinking_tokens,
                                                             },
                                                         ),
                                                     ))
@@ -723,11 +729,12 @@ impl AnthropicService {
 
         tokio::spawn(async move {
             let mut buffer = Vec::new();
-            
+
             // 跟踪当前 block 的类型和 JSON 缓存
             let mut current_block_index: Option<usize> = None;
             let mut current_block_type: Option<String> = None;
-            let mut json_buffers: std::collections::HashMap<usize, String> = std::collections::HashMap::new();
+            let mut json_buffers: std::collections::HashMap<usize, String> =
+                std::collections::HashMap::new();
 
             while let Some(chunk) = stream.next().await {
                 if let Ok(data) = chunk {
@@ -769,11 +776,14 @@ impl AnthropicService {
 
                                                     // 初始化 JSON buffer
                                                     if block_type == "tool_use" {
-                                                        json_buffers.insert(block.index, String::new());
+                                                        json_buffers
+                                                            .insert(block.index, String::new());
 
                                                         // 发送工具使用事件
-                                                        if let (Some(tool_name), Some(tool_use_id)) =
-                                                            (block.name, block.id)
+                                                        if let (
+                                                            Some(tool_name),
+                                                            Some(tool_use_id),
+                                                        ) = (block.name, block.id)
                                                         {
                                                             tx.send(Ok(
                                                                 kode_core::model::StreamChunk::tool_use(
@@ -806,10 +816,12 @@ impl AnthropicService {
                                                             delta.input_json_delta
                                                         {
                                                             // 追加到 JSON buffer
-                                                            if let Some(buf) = json_buffers.get_mut(&index) {
+                                                            if let Some(buf) =
+                                                                json_buffers.get_mut(&index)
+                                                            {
                                                                 buf.push_str(&input_json);
                                                             }
-                                                            
+
                                                             tx.send(Ok(kode_core::model::StreamChunk::content_block_delta(
                                                                 index,
                                                                 input_json,
@@ -823,8 +835,12 @@ impl AnthropicService {
                                             "content_block_stop" => {
                                                 if let Some(index) = current_block_index {
                                                     // 如果是 tool_use，在 stop 时发送完整的事件
-                                                    if current_block_type.as_ref().map(|s| s.as_str()) == Some("tool_use") {
-                                                        if let Some(json_str) = json_buffers.remove(&index) {
+                                                    if current_block_type.as_deref()
+                                                        == Some("tool_use")
+                                                    {
+                                                        if let Some(json_str) =
+                                                            json_buffers.remove(&index)
+                                                        {
                                                             // 发送 tool_use 完整事件
                                                             tx.send(Ok(
                                                                 kode_core::model::StreamChunk::tool_use_complete(index, json_str.clone()),
@@ -833,11 +849,11 @@ impl AnthropicService {
                                                             .ok();
                                                         }
                                                     }
-                                                    
+
                                                     tx.send(Ok(kode_core::model::StreamChunk::content_block_stop(index)))
                                                         .await
                                                         .ok();
-                                                    
+
                                                     current_block_index = None;
                                                     current_block_type = None;
                                                 }
@@ -853,7 +869,8 @@ impl AnthropicService {
                                                                     usage.input_tokens
                                                                         + usage.output_tokens,
                                                                 ),
-                                                                thinking_tokens: usage.thinking_tokens,
+                                                                thinking_tokens: usage
+                                                                    .thinking_tokens,
                                                             },
                                                         ),
                                                     ))
@@ -1058,15 +1075,15 @@ impl AnthropicClientManager {
     /// 如果配置发生变化或客户端不存在，则创建新客户端
     pub fn get_client(&mut self, config: &AnthropicConfig) -> Client {
         let config_hash = self.compute_config_hash(config);
-        
+
         // 检查是否需要重新创建客户端
         let needs_recreate = self.client.is_none() || self.config_hash != config_hash;
-        
+
         if needs_recreate {
             self.client = Some(self.build_client(config));
             self.config_hash = config_hash;
         }
-        
+
         self.last_used = std::time::Instant::now();
         self.client.as_ref().unwrap().clone()
     }

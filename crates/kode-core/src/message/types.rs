@@ -355,12 +355,12 @@ impl ProgressMessage {
     ///
     /// # Examples
     /// ```
-    /// use kode_core::message::ProgressMessage;
-    /// use kode_core::message::Message;
+    /// use kode_core::message::types::ProgressMessage;
+    /// use kode_core::message::types::Message;
     /// use std::collections::HashSet;
     ///
     /// let msg = Message::assistant("Running command...");
-    /// let ids = HashSet::from(["tool-1", "tool-2"]);
+    /// let ids = HashSet::from(["tool-1".to_string(), "tool-2".to_string()]);
     ///
     /// let progress = ProgressMessage::new(
     ///     &msg,

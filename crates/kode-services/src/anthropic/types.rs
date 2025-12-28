@@ -4,6 +4,8 @@
 
 use kode_core::message::ContentBlock;
 use serde::{Deserialize, Serialize};
+use tokio::sync::oneshot;
+use std::time::Instant;
 
 /// 思考类型
 #[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq)]
@@ -52,6 +54,239 @@ impl ThinkingConfig {
     /// 禁用思考模式
     pub fn disabled() -> Self {
         Self::new(ThinkingType::Disabled, None)
+    }
+}
+
+/// 中断信号
+///
+/// 用于中断正在进行的流式请求，类似于 TypeScript 的 AbortSignal。
+///
+/// # Examples
+///
+/// ```
+/// use kode_services::anthropic::types::AbortSignal;
+///
+/// let signal = AbortSignal::new();
+/// let handle = signal.subscribe();
+///
+/// // 在另一个任务中检查中断
+/// tokio::spawn(async move {
+///     handle.aborted().await;
+///     println!("Request was cancelled");
+/// });
+///
+/// // 触发中断
+/// signal.abort();
+/// ```
+#[derive(Debug)]
+pub struct AbortSignal {
+    tx: oneshot::Sender<()>,
+}
+
+impl AbortSignal {
+    /// 创建新的中断信号
+    pub fn new() -> (Self, AbortHandle) {
+        let (tx, rx) = oneshot::channel();
+        let signal = Self { tx };
+        let handle = AbortHandle { rx };
+        (signal, handle)
+    }
+
+    /// 触发中断
+    pub fn abort(self) {
+        // 发送失败是正常的，说明接收端已经被丢弃
+        let _ = self.tx.send(());
+    }
+}
+
+/// 中断句柄
+///
+/// 用于检查中断信号是否被触发。
+#[derive(Debug)]
+pub struct AbortHandle {
+    rx: oneshot::Receiver<()>,
+}
+
+impl AbortHandle {
+    /// 检查是否已被中断
+    ///
+    /// 注意：oneshot::Receiver 不提供 is_closed 方法，
+    /// 所以我们使用 try_recv 来检查状态。
+    pub fn is_aborted(&mut self) -> bool {
+        // 尝试非阻塞地接收，如果成功说明已 aborted
+        matches!(self.rx.try_recv(), Ok(_) | Err(oneshot::error::TryRecvError::Closed))
+    }
+
+    /// 等待中断信号
+    ///
+    /// 如果信号已被触发，立即返回；否则等待直到被触发。
+    pub async fn aborted(self) {
+        // 忽略错误，因为发送端可能被正常丢弃
+        let _ = self.rx.await;
+    }
+}
+
+/// 流式响应性能指标
+///
+/// 用于追踪流式响应的性能数据，包括 TTFT、事件计数等。
+#[derive(Debug, Clone)]
+pub struct StreamMetrics {
+    /// 流开始时间
+    pub start_time: Instant,
+    /// 首个 token 到达时间
+    pub first_token_time: Option<Instant>,
+    /// 流结束时间
+    pub end_time: Option<Instant>,
+    /// 接收的 chunk 总数
+    pub chunk_count: usize,
+    /// 错误次数
+    pub error_count: usize,
+}
+
+impl StreamMetrics {
+    /// 创建新的性能指标
+    pub fn new() -> Self {
+        Self {
+            start_time: Instant::now(),
+            first_token_time: None,
+            end_time: None,
+            chunk_count: 0,
+            error_count: 0,
+        }
+    }
+
+    /// 记录首个 token 时间
+    pub fn mark_first_token(&mut self) {
+        if self.first_token_time.is_none() {
+            self.first_token_time = Some(Instant::now());
+        }
+    }
+
+    /// 记录流结束
+    pub fn mark_end(&mut self) {
+        if self.end_time.is_none() {
+            self.end_time = Some(Instant::now());
+        }
+    }
+
+    /// 增加 chunk 计数
+    pub fn increment_chunk(&mut self) {
+        self.chunk_count += 1;
+    }
+
+    /// 增加错误计数
+    pub fn increment_error(&mut self) {
+        self.error_count += 1;
+    }
+
+    /// 计算 TTFT (Time To First Token)
+    ///
+    /// 返回从流开始到首个 token 的毫秒数
+    pub fn ttft_ms(&self) -> Option<u128> {
+        self.first_token_time.map(|t| t.duration_since(self.start_time).as_millis())
+    }
+
+    /// 计算总时长
+    ///
+    /// 返回从流开始到流结束的毫秒数
+    pub fn total_duration_ms(&self) -> Option<u128> {
+        self.end_time.map(|t| t.duration_since(self.start_time).as_millis())
+    }
+
+    /// 计算流式时长
+    ///
+    /// 返回从首个 token 到流结束的毫秒数
+    pub fn streaming_duration_ms(&self) -> Option<u128> {
+        match (self.first_token_time, self.end_time) {
+            (Some(first), Some(end)) => Some(end.duration_since(first).as_millis()),
+            _ => None,
+        }
+    }
+}
+
+impl Default for StreamMetrics {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+#[cfg(test)]
+mod abort_tests {
+    use super::*;
+
+    #[tokio::test]
+    async fn test_abort_signal() {
+        let (signal, handle) = AbortSignal::new();
+
+        // 在任务中等待中断
+        let task = tokio::spawn(async move {
+            handle.aborted().await;
+            true
+        });
+
+        // 触发中断
+        signal.abort();
+
+        // 验证任务收到中断信号
+        assert!(task.await.unwrap());
+    }
+
+    #[tokio::test]
+    async fn test_abort_before_wait() {
+        let (signal, handle) = AbortSignal::new();
+
+        // 先触发中断
+        signal.abort();
+
+        // 然后等待，应该立即返回
+        handle.aborted().await;
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[tokio::test]
+    async fn test_abort_signal() {
+        let (signal, handle) = AbortSignal::new();
+
+        // 在任务中等待中断
+        let task = tokio::spawn(async move {
+            handle.aborted().await;
+            true
+        });
+
+        // 触发中断
+        signal.abort();
+
+        // 验证任务收到中断信号
+        assert!(task.await.unwrap());
+    }
+
+    #[tokio::test]
+    async fn test_abort_handle_is_aborted() {
+        let (signal, handle) = AbortSignal::new();
+
+        // 初始状态未被中断
+        assert!(!handle.is_aborted());
+
+        // 触发中断
+        signal.abort();
+
+        // 现在应该被中断
+        assert!(handle.is_aborted());
+    }
+
+    #[tokio::test]
+    async fn test_abort_before_wait() {
+        let (signal, handle) = AbortSignal::new();
+
+        // 先触发中断
+        signal.abort();
+
+        // 然后等待，应该立即返回
+        handle.aborted().await;
     }
 }
 

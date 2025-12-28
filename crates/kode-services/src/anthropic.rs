@@ -20,7 +20,7 @@ pub mod error;
 pub mod types;
 
 pub use error::*;
-pub use types::*;
+pub use types::{AbortHandle, AbortSignal, StreamMetrics, *};
 
 use crate::anthropic::cache::AnthropicCacheConfig;
 
@@ -298,7 +298,7 @@ impl ModelAdapter for AnthropicService {
         system_prompt: Option<String>,
         max_tokens: usize,
     ) -> Result<StreamingResponse> {
-        self.stream_message_with_retry(messages, system_prompt, max_tokens, None)
+        self.stream_message_with_tools_internal(messages, system_prompt, max_tokens, &[], None)
             .await
     }
 
@@ -320,8 +320,14 @@ impl ModelAdapter for AnthropicService {
         max_tokens: usize,
         tools: &[serde_json::Value],
     ) -> Result<StreamingResponse> {
-        self.stream_message_with_tools_internal(messages, system_prompt, max_tokens, tools)
-            .await
+        self.stream_message_with_tools_internal(
+            messages,
+            system_prompt,
+            max_tokens,
+            tools,
+            None, // No abort signal by default
+        )
+        .await
     }
 
     fn model_name(&self) -> &str {
@@ -399,271 +405,6 @@ impl AnthropicService {
         ))
     }
 
-    /// 带重试的流式消息方法
-    async fn stream_message_with_retry(
-        &self,
-        messages: Vec<Message>,
-        system_prompt: Option<String>,
-        max_tokens: usize,
-        tools: Option<&[Value]>,
-    ) -> Result<StreamingResponse> {
-        let request_body =
-            self.build_request_body(&messages, system_prompt.as_deref(), max_tokens, tools)?;
-
-        debug!(target: "kode_services", "Starting streaming request to Anthropic API");
-
-        let url = format!("{}/v1/messages", self.base_url());
-
-        // 重试逻辑
-        let max_retries = 3;
-        let mut last_error: Option<anyhow::Error> = None;
-
-        for attempt in 1..=max_retries + 1 {
-            match self
-                .client
-                .post(&url)
-                .header("Accept", "text/event-stream")
-                .json(&request_body)
-                .send()
-                .await
-            {
-                Ok(response) if response.status().is_success() => {
-                    return self.handle_streaming_response(response, tools.is_some());
-                }
-                Ok(response) => {
-                    if response.status() == 429 || response.status().is_server_error() {
-                        let delay = get_retry_delay(attempt);
-                        tokio::time::sleep(std::time::Duration::from_millis(delay)).await;
-                        last_error = Some(anyhow::anyhow!("HTTP {}", response.status()));
-                        continue;
-                    }
-                    let status = response.status();
-                    let text = response.text().await.unwrap_or_default();
-                    return Err(kode_core::error::Error::ModelRequestError(format!(
-                        "HTTP {}: {}",
-                        status, text
-                    )));
-                }
-                Err(e) => {
-                    last_error = Some(e.into());
-                }
-            }
-
-            if attempt <= max_retries {
-                let delay = get_retry_delay(attempt);
-                debug!(
-                    target: "kode_services",
-                    "Retry attempt {}/{} after {}ms",
-                    attempt, max_retries, delay
-                );
-                tokio::time::sleep(std::time::Duration::from_millis(delay)).await;
-            }
-        }
-
-        Err(kode_core::error::Error::ModelRequestError(
-            last_error.unwrap_or_else(|| anyhow::anyhow!("Unknown error")).to_string(),
-        ))
-    }
-
-    /// 处理流式响应
-    fn handle_streaming_response(
-        &self,
-        response: reqwest::Response,
-        _has_tools: bool,
-    ) -> Result<StreamingResponse> {
-        let (tx, rx) = StreamingResponse::channel();
-
-        // Spawn task to handle streaming response
-        let mut stream = response.bytes_stream();
-        let _tx = tokio::spawn(async move {
-            let mut buffer = Vec::new();
-            let mut current_block_index: Option<usize> = None;
-            let mut current_block_type: Option<String> = None;
-            let mut json_buffers: std::collections::HashMap<usize, String> =
-                std::collections::HashMap::new();
-
-            while let Some(chunk) = stream.next().await {
-                if let Ok(data) = chunk {
-                    buffer.extend(&data);
-
-                    // Process complete SSE events
-                    while let Some(pos) =
-                        buffer.windows(2).position(|w| w == [b'\n', b'\n'])
-                    {
-                        let event_data =
-                            String::from_utf8_lossy(&buffer[..pos]).into_owned();
-                        buffer.drain(..=pos + 1);
-
-                        // Parse SSE format
-                        for line in event_data.lines() {
-                            if line.starts_with("data:") {
-                                if let Some(json_str) =
-                                    line.strip_prefix("data:").map(|s| s.trim())
-                                {
-                                    if json_str == "[DONE]" {
-                                        // Send final message stop
-                                        tx.send(Ok(kode_core::model::StreamChunk::message_stop(
-                                            kode_core::model::TokenUsage {
-                                                input_tokens: 0,
-                                                output_tokens: 0,
-                                                total_tokens: None,
-                                                thinking_tokens: None,
-                                            },
-                                        )))
-                                        .await
-                                        .ok();
-                                        return;
-                                    }
-
-                                    if let Ok(event) =
-                                        serde_json::from_str::<ServerSentEvent>(json_str)
-                                    {
-                                        match event.r#type.as_str() {
-                                            "content_block_start" => {
-                                                if let Some(block) = event.content_block {
-                                                    current_block_index = Some(block.index);
-                                                    let block_type = block.block_type.clone();
-                                                    current_block_type = Some(block_type.clone());
-
-                                                    // 初始化 JSON buffer
-                                                    if block_type == "tool_use" {
-                                                        json_buffers
-                                                            .insert(block.index, String::new());
-
-                                                        // 发送工具使用事件
-                                                        if let (Some(tool_name), Some(tool_use_id)) =
-                                                            (block.name, block.id)
-                                                        {
-                                                            tx.send(Ok(
-                                                                kode_core::model::StreamChunk::tool_use(
-                                                                    tool_name,
-                                                                    tool_use_id,
-                                                                    serde_json::Value::Null,
-                                                                ),
-                                                            ))
-                                                            .await
-                                                            .ok();
-                                                        }
-                                                    }
-
-                                                    tx.send(Ok(
-                                                        kode_core::model::StreamChunk::content_block_start(
-                                                            block.index,
-                                                        ),
-                                                    ))
-                                                    .await
-                                                    .ok();
-                                                }
-                                            }
-                                            "content_block_delta" => {
-                                                if let Some(delta) = event.delta {
-                                                    if let Some(text_delta) = delta.text_delta {
-                                                        if let Some(index) = current_block_index {
-                                                            tx.send(Ok(
-                                                                kode_core::model::StreamChunk::
-                                                                    content_block_delta(index, text_delta),
-                                                            ))
-                                                            .await
-                                                            .ok();
-                                                        }
-                                                    } else if let Some(input_json) =
-                                                        delta.input_json_delta
-                                                    {
-                                                        // Handle JSON delta for tool use
-                                                        if let (Some(index), Some(block_type)) =
-                                                            (current_block_index, &current_block_type)
-                                                        {
-                                                            if block_type == "tool_use" {
-                                                                if let Some(buffer) =
-                                                                    json_buffers.get_mut(&index)
-                                                                {
-                                                                    buffer.push_str(&input_json);
-                                                                }
-                                                            }
-                                                        }
-
-                                                        if let Some(index) = current_block_index {
-                                                            tx.send(Ok(
-                                                                kode_core::model::StreamChunk::
-                                                                    content_block_delta(index, input_json),
-                                                            ))
-                                                            .await
-                                                            .ok();
-                                                        }
-                                                    }
-                                                }
-                                            }
-                                            "content_block_stop" => {
-                                                // 如果是工具调用，发送完整参数
-                                                if let (Some(index), Some(block_type)) =
-                                                    (current_block_index, &current_block_type)
-                                                {
-                                                    if block_type == "tool_use" {
-                                                        if let Some(complete_json) =
-                                                            json_buffers.remove(&index)
-                                                        {
-                                                            tx.send(Ok(
-                                                                kode_core::model::StreamChunk::
-                                                                    tool_use_complete(index, complete_json),
-                                                            ))
-                                                            .await
-                                                            .ok();
-                                                        }
-                                                    }
-                                                }
-
-                                                if let Some(index) = current_block_index {
-                                                    tx.send(Ok(
-                                                        kode_core::model::StreamChunk::content_block_stop(
-                                                            index,
-                                                        ),
-                                                    ))
-                                                    .await
-                                                    .ok();
-                                                }
-
-                                                current_block_index = None;
-                                                current_block_type = None;
-                                            }
-                                            "message_delta" => {
-                                                // Message delta with stop_reason or usage
-                                                if let Some(usage) = event.usage {
-                                                    tx.send(Ok(
-                                                        kode_core::model::StreamChunk::message_stop(
-                                                            kode_core::model::TokenUsage {
-                                                                input_tokens: usage.input_tokens,
-                                                                output_tokens: usage.output_tokens,
-                                                                total_tokens: Some(
-                                                                    usage.input_tokens
-                                                                        + usage.output_tokens,
-                                                                ),
-                                                                thinking_tokens: usage.thinking_tokens,
-                                                            },
-                                                        ),
-                                                    ))
-                                                    .await
-                                                    .ok();
-                                                }
-                                            }
-                                            "message_stop" => {
-                                                // Message completed
-                                            }
-                                            _ => {
-                                                // Unknown event type
-                                            }
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        });
-
-        Ok(rx)
-    }
-
     /// 内部方法：发送消息（支持工具调用）
     async fn send_message_with_tools_internal(
         &self,
@@ -699,6 +440,7 @@ impl AnthropicService {
         system_prompt: Option<String>,
         max_tokens: usize,
         tools: &[Value],
+        abort_handle: Option<AbortHandle>,
     ) -> Result<StreamingResponse> {
         let request_body =
             self.build_request_body(&messages, system_prompt.as_deref(), max_tokens, Some(tools))?;
@@ -723,148 +465,218 @@ impl AnthropicService {
 
         tokio::spawn(async move {
             let mut buffer = Vec::new();
-            
+
             // 跟踪当前 block 的类型和 JSON 缓存
             let mut current_block_index: Option<usize> = None;
             let mut current_block_type: Option<String> = None;
             let mut json_buffers: std::collections::HashMap<usize, String> = std::collections::HashMap::new();
 
-            while let Some(chunk) = stream.next().await {
-                if let Ok(data) = chunk {
-                    buffer.extend(&data);
+            // 创建性能监控指标
+            let mut metrics = StreamMetrics::new();
 
-                    // Process complete SSE events
-                    while let Some(pos) = buffer.windows(2).position(|w| w == [b'\n', b'\n']) {
-                        let event_data = String::from_utf8_lossy(&buffer[..pos]).into_owned();
-                        buffer.drain(..=pos + 1);
+            // 创建用于检查中断的通道
+            let (abort_tx, mut abort_rx) = tokio::sync::oneshot::channel::<()>();
 
-                        // Parse SSE format
-                        for line in event_data.lines() {
-                            if line.starts_with("data:") {
-                                if let Some(json_str) = line.strip_prefix("data:").map(|s| s.trim())
-                                {
-                                    if json_str == "[DONE]" {
-                                        tx.send(Ok(kode_core::model::StreamChunk::message_stop(
-                                            kode_core::model::TokenUsage {
-                                                input_tokens: 0,
-                                                output_tokens: 0,
-                                                total_tokens: None,
-                                                thinking_tokens: None,
-                                            },
-                                        )))
-                                        .await
-                                        .ok();
-                                        return;
-                                    }
+            if let Some(handle) = abort_handle {
+                tokio::spawn(async move {
+                    handle.aborted().await;
+                    // 忽略发送错误，因为接收端可能已经关闭
+                    let _ = abort_tx.send(());
+                });
+            }
 
-                                    if let Ok(event) =
-                                        serde_json::from_str::<ServerSentEvent>(json_str)
-                                    {
-                                        match event.r#type.as_str() {
-                                            "content_block_start" => {
-                                                if let Some(block) = event.content_block {
-                                                    current_block_index = Some(block.index);
-                                                    let block_type = block.block_type.clone();
-                                                    current_block_type = Some(block_type.clone());
+            // 记录流开始
+            debug!(target: "kode_services", 
+                   "ANTHROPIC_STREAM_START: Starting streaming request");
 
-                                                    // 初始化 JSON buffer
-                                                    if block_type == "tool_use" {
-                                                        json_buffers.insert(block.index, String::new());
+            loop {
+                // 使用 tokio::select! 同时等待流数据和中止信号
+                tokio::select! {
+                    // 检查中止信号
+                    _ = &mut abort_rx => {
+                        debug!(target: "kode_services", "Streaming request was aborted");
+                        let _ = tx.send(Err(kode_core::error::Error::ModelStreamError(
+                            "Request was cancelled".to_string()
+                        ))).await;
+                        return;
+                    }
 
-                                                        // 发送工具使用事件
-                                                        if let (Some(tool_name), Some(tool_use_id)) =
-                                                            (block.name, block.id)
-                                                        {
-                                                            tx.send(Ok(
-                                                                kode_core::model::StreamChunk::tool_use(
-                                                                    tool_name,
-                                                                    tool_use_id,
-                                                                    serde_json::Value::Null,
-                                                                ),
-                                                            ))
-                                                            .await
-                                                            .ok();
-                                                        }
-                                                    }
+                    // 等待流数据
+                    chunk_opt = stream.next() => {
+                        match chunk_opt {
+                            Some(Ok(data)) => {
+                                buffer.extend(&data);
 
-                                                    tx.send(Ok(kode_core::model::StreamChunk::content_block_start(block.index)))
-                                                        .await
-                                                        .ok();
-                                                }
-                                            }
-                                            "content_block_delta" => {
-                                                if let Some(delta) = event.delta {
-                                                    if let Some(index) = current_block_index {
-                                                        if let Some(text_delta) = delta.text_delta {
-                                                            tx.send(Ok(kode_core::model::StreamChunk::content_block_delta(
-                                                                index,
-                                                                text_delta,
-                                                            )))
-                                                            .await
-                                                            .ok();
-                                                        } else if let Some(input_json) =
-                                                            delta.input_json_delta
-                                                        {
-                                                            // 追加到 JSON buffer
-                                                            if let Some(buf) = json_buffers.get_mut(&index) {
-                                                                buf.push_str(&input_json);
-                                                            }
-                                                            
-                                                            tx.send(Ok(kode_core::model::StreamChunk::content_block_delta(
-                                                                index,
-                                                                input_json,
-                                                            )))
-                                                            .await
-                                                            .ok();
-                                                        }
-                                                    }
-                                                }
-                                            }
-                                            "content_block_stop" => {
-                                                if let Some(index) = current_block_index {
-                                                    // 如果是 tool_use，在 stop 时发送完整的事件
-                                                    if current_block_type.as_ref().map(|s| s.as_str()) == Some("tool_use") {
-                                                        if let Some(json_str) = json_buffers.remove(&index) {
-                                                            // 发送 tool_use 完整事件
-                                                            tx.send(Ok(
-                                                                kode_core::model::StreamChunk::tool_use_complete(index, json_str.clone()),
-                                                            ))
-                                                            .await
-                                                            .ok();
-                                                        }
-                                                    }
-                                                    
-                                                    tx.send(Ok(kode_core::model::StreamChunk::content_block_stop(index)))
-                                                        .await
-                                                        .ok();
-                                                    
-                                                    current_block_index = None;
-                                                    current_block_type = None;
-                                                }
-                                            }
-                                            "message_delta" => {
-                                                if let Some(usage) = event.usage {
-                                                    tx.send(Ok(
-                                                        kode_core::model::StreamChunk::message_stop(
-                                                            kode_core::model::TokenUsage {
-                                                                input_tokens: usage.input_tokens,
-                                                                output_tokens: usage.output_tokens,
-                                                                total_tokens: Some(
-                                                                    usage.input_tokens
-                                                                        + usage.output_tokens,
-                                                                ),
-                                                                thinking_tokens: usage.thinking_tokens,
-                                                            },
-                                                        ),
-                                                    ))
+                                // Process complete SSE events
+                                while let Some(pos) = buffer.windows(2).position(|w| w == [b'\n', b'\n']) {
+                                    let event_data = String::from_utf8_lossy(&buffer[..pos]).into_owned();
+                                    buffer.drain(..=pos + 1);
+
+                                    // Parse SSE format
+                                    for line in event_data.lines() {
+                                        if line.starts_with("data:") {
+                                            if let Some(json_str) = line.strip_prefix("data:").map(|s| s.trim())
+                                            {
+                                                if json_str == "[DONE]" {
+                                                    tx.send(Ok(kode_core::model::StreamChunk::message_stop(
+                                                        kode_core::model::TokenUsage {
+                                                            input_tokens: 0,
+                                                            output_tokens: 0,
+                                                            total_tokens: None,
+                                                            thinking_tokens: None,
+                                                        },
+                                                    )))
                                                     .await
                                                     .ok();
+                                                    return;
+                                                }
+
+                                                if let Ok(event) =
+                                                    serde_json::from_str::<ServerSentEvent>(json_str)
+                                                {
+                                                    match event.r#type.as_str() {
+                                                        "content_block_start" => {
+                                                            if let Some(block) = event.content_block {
+                                                                current_block_index = Some(block.index);
+                                                                let block_type = block.block_type.clone();
+                                                                current_block_type = Some(block_type.clone());
+
+                                                                // 初始化 JSON buffer
+                                                                if block_type == "tool_use" {
+                                                                    json_buffers.insert(block.index, String::new());
+
+                                                                    // 发送工具使用事件
+                                                                    if let (Some(tool_name), Some(tool_use_id)) =
+                                                                        (block.name, block.id)
+                                                                    {
+                                                                        tx.send(Ok(
+                                                                            kode_core::model::StreamChunk::tool_use(
+                                                                                tool_name,
+                                                                                tool_use_id,
+                                                                                serde_json::Value::Null,
+                                                                            ),
+                                                                        ))
+                                                                        .await
+                                                                        .ok();
+                                                                    }
+                                                                }
+
+                                                                tx.send(Ok(kode_core::model::StreamChunk::content_block_start(block.index)))
+                                                                    .await
+                                                                    .ok();
+                                                            }
+                                                        }
+                                                        "content_block_delta" => {
+                                                            if let Some(delta) = event.delta {
+                                                                if let Some(index) = current_block_index {
+                                                                    // 记录首个 token 时间和 chunk 计数
+                                                                    if metrics.first_token_time.is_none() {
+                                                                        metrics.mark_first_token();
+                                                                        if let Some(ttft) = metrics.ttft_ms() {
+                                                                            debug!(target: "kode_services",
+                                                                                   "ANTHROPIC_STREAM_FIRST_TOKEN: TTFT = {}ms, chunk_index = {}",
+                                                                                   ttft, index);
+                                                                        }
+                                                                    }
+                                                                    metrics.increment_chunk();
+
+                                                                    if let Some(text_delta) = delta.text_delta {
+                                                                        tx.send(Ok(kode_core::model::StreamChunk::content_block_delta(
+                                                                            index,
+                                                                            text_delta,
+                                                                        )))
+                                                                        .await
+                                                                        .ok();
+                                                                    } else if let Some(input_json) =
+                                                                        delta.input_json_delta
+                                                                    {
+                                                                        // 追加到 JSON buffer
+                                                                        if let Some(buf) = json_buffers.get_mut(&index) {
+                                                                            buf.push_str(&input_json);
+                                                                        }
+
+                                                                        tx.send(Ok(kode_core::model::StreamChunk::content_block_delta(
+                                                                            index,
+                                                                            input_json,
+                                                                        )))
+                                                                        .await
+                                                                        .ok();
+                                                                    }
+                                                                }
+                                                            }
+                                                        }
+                                                        "content_block_stop" => {
+                                                            if let Some(index) = current_block_index {
+                                                                // 如果是 tool_use，在 stop 时发送完整的事件
+                                                                if current_block_type.as_deref() == Some("tool_use") {
+                                                                    if let Some(json_str) = json_buffers.remove(&index) {
+                                                                        // 发送 tool_use 完整事件
+                                                                        tx.send(Ok(
+                                                                            kode_core::model::StreamChunk::tool_use_complete(index, json_str.clone()),
+                                                                        ))
+                                                                        .await
+                                                                        .ok();
+                                                                    }
+                                                                }
+
+                                                                tx.send(Ok(kode_core::model::StreamChunk::content_block_stop(index)))
+                                                                    .await
+                                                                    .ok();
+
+                                                                current_block_index = None;
+                                                                current_block_type = None;
+                                                            }
+                                                        }
+                                                        "message_delta" => {
+                                                            if let Some(usage) = event.usage {
+                                                                // 记录流结束
+                                                                metrics.mark_end();
+
+                                                                // 记录完成日志
+                                                                if let (Some(ttft), Some(total_duration)) = (
+                                                                    metrics.ttft_ms(),
+                                                                    metrics.total_duration_ms()
+                                                                ) {
+                                                                    debug!(target: "kode_services",
+                                                                           "ANTHROPIC_STREAM_COMPLETE: TTFT = {}ms, total = {}ms, chunks = {}, errors = {}",
+                                                                           ttft, total_duration, metrics.chunk_count, metrics.error_count);
+                                                                }
+
+                                                                tx.send(Ok(
+                                                                    kode_core::model::StreamChunk::message_stop(
+                                                                        kode_core::model::TokenUsage {
+                                                                            input_tokens: usage.input_tokens,
+                                                                            output_tokens: usage.output_tokens,
+                                                                            total_tokens: Some(
+                                                                                usage.input_tokens
+                                                                                    + usage.output_tokens,
+                                                                            ),
+                                                                            thinking_tokens: usage.thinking_tokens,
+                                                                        },
+                                                                    ),
+                                                                ))
+                                                                .await
+                                                                .ok();
+                                                            }
+                                                        }
+                                                        _ => {}
+                                                    }
                                                 }
                                             }
-                                            _ => {}
                                         }
                                     }
                                 }
+                            }
+                            Some(Err(e)) => {
+                                metrics.increment_error();
+                                debug!(target: "kode_services", "Stream error: {}", e);
+                                tx.send(Err(kode_core::error::Error::ModelStreamError(e.to_string()))).await.ok();
+                                return;
+                            }
+                            None => {
+                                // Stream ended normally
+                                metrics.mark_end();
+                                return;
                             }
                         }
                     }

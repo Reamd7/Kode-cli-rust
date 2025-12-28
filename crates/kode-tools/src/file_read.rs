@@ -6,9 +6,10 @@ use std::path::{Path, PathBuf};
 use std::sync::Arc;
 
 use crate::file_utils::{add_line_numbers, find_similar_file, read_text_content};
+use crate::image_utils::process_image;
 use crate::secure_file::SecureFileService;
 use crate::tool::{Tool, ToolContext, ToolResult, ToolSchema, ValidationResult};
-use anyhow::Result;
+use anyhow::{Context, Result};
 
 /// 文本文件最大大小 (250KB)
 const MAX_TEXT_FILE_SIZE: usize = 250 * 1024;
@@ -65,20 +66,15 @@ impl FileReadTool {
         Ok(ToolResult::with_metadata(content, metadata))
     }
 
-    /// 读取图片文件（返回 Base64）
-    async fn read_image_file(&self, path: &PathBuf) -> Result<ToolResult> {
-        use base64::{engine::general_purpose, Engine as _};
-        use std::fs;
-
-        let bytes = fs::read(path)?;
-        let base64 = general_purpose::STANDARD.encode(&bytes);
-
-        let metadata = json!({
-            "size": bytes.len(),
-            "format": path.extension().and_then(|e| e.to_str()).unwrap_or("unknown"),
-        });
-
-        Ok(ToolResult::with_metadata(base64, metadata))
+    /// 读取图片文件（自动处理尺寸和压缩）
+    ///
+    /// 使用 `process_image` 函数进行智能图片处理：
+    /// - 自动调整超大图片尺寸（> 2000x2000）
+    /// - 自动压缩超大文件（> 3.75MB）
+    /// - 保持原始格式（除非需要压缩）
+    async fn read_image_file(&self, path: &Path) -> Result<ToolResult> {
+        // 使用图片处理工具
+        process_image(path).with_context(|| format!("图片处理失败: {}", path.display()))
     }
 }
 

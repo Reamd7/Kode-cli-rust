@@ -641,23 +641,23 @@
 > **重要**: 这些任务不是可选的"设计权衡"，而是必须完成的功能，以达到与 TypeScript 原版完全等价。
 
 ### 8.1 图片处理增强
-- [ ] 8.1.1 实现图片 resize 功能
+- [x] 8.1.1 实现图片 resize 功能
   - 使用 `image` crate 的 `imageops::resize`
   - 支持按宽度缩放（保持宽高比）
   - 支持按高度缩放（保持宽高比）
   - 支持按尺寸限制缩放（MAX_WIDTH: 2000, MAX_HEIGHT: 2000）
   - 添加单元测试
-- [ ] 8.1.2 实现图片 compress 功能
+- [x] 8.1.2 实现图片 compress 功能
   - 支持质量参数（1-100）
   - 支持 JPEG 压缩
   - 支持 PNG 压缩（优化）
   - 添加单元测试
-- [ ] 8.1.3 集成到 FileReadTool
+- [x] 8.1.3 集成到 FileReadTool
   - 检测超大图片（> MAX_WIDTH 或 > MAX_HEIGHT）
   - 自动触发 resize
   - 返回压缩后的 Base64
   - 记录操作日志和原始尺寸信息
-- [ ] 8.1.4 添加图片格式转换
+- [x] 8.1.4 添加图片格式转换
   - 支持 PNG ↔ JPEG 转换
   - 支持 WebP 转换
   - 添加单元测试
@@ -665,6 +665,18 @@
 **参考**: `/Users/gemini/Documents/backup/Kode-cli/src/tools/FileReadTool/utils.ts` (processImage)
 
 **实现优先级**: P1（高）- 用户经常需要读取图片，自动处理可以提升体验
+
+**实现状态**: ✅ **已完成** (2025-12-28)
+- ✅ 创建 `crates/kode-tools/src/image_utils.rs` 实现 `process_image()`
+- ✅ 自动调整超大图片尺寸（> 2000x2000）
+- ✅ 自动压缩超大文件（> 3.75MB）为 JPEG
+- ✅ 保持原始格式（除非需要压缩）
+- ✅ 添加 feature gate 支持可选的 image crate
+- ✅ 更新 FileReadTool 集成图片处理
+- ✅ 添加单元测试（2 个测试通过）
+- ✅ 所有 43 个单元测试通过
+- ✅ Clippy 零警告
+- ✅ 代码格式化完成
 
 ### 8.2 JSON Schema 验证增强
 - [ ] 8.2.1 添加 `jsonschema` crate 依赖

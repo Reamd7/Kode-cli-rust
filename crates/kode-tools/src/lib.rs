@@ -17,6 +17,9 @@ pub mod secure_file;
 /// 文件工具函数
 pub mod file_utils;
 
+/// 图片处理工具
+pub mod image_utils;
+
 /// 文件读取工具
 pub mod file_read;
 

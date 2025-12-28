@@ -42,12 +42,13 @@ base64 = "0.22"
 uuid = { workspace = true }
 
 [features]
-default = []
-image = ["dep:image"]
+default = ["image"]
+image = ["image_crate"]
 
-[dependencies.image]
+[dependencies.image_crate]
 version = "0.25"
 optional = true
+package = "image"
 
 [dev-dependencies]
 tokio = { workspace = true, features = ["test-util"] }

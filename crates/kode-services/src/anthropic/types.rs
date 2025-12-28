@@ -4,8 +4,8 @@
 
 use kode_core::message::ContentBlock;
 use serde::{Deserialize, Serialize};
-use tokio::sync::oneshot;
 use std::time::Instant;
+use tokio::sync::oneshot;
 
 /// 思考类型
 #[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq)]
@@ -114,7 +114,10 @@ impl AbortHandle {
     /// 所以我们使用 try_recv 来检查状态。
     pub fn is_aborted(&mut self) -> bool {
         // 尝试非阻塞地接收，如果成功说明已 aborted
-        matches!(self.rx.try_recv(), Ok(_) | Err(oneshot::error::TryRecvError::Closed))
+        matches!(
+            self.rx.try_recv(),
+            Ok(_) | Err(oneshot::error::TryRecvError::Closed)
+        )
     }
 
     /// 等待中断信号
@@ -183,14 +186,16 @@ impl StreamMetrics {
     ///
     /// 返回从流开始到首个 token 的毫秒数
     pub fn ttft_ms(&self) -> Option<u128> {
-        self.first_token_time.map(|t| t.duration_since(self.start_time).as_millis())
+        self.first_token_time
+            .map(|t| t.duration_since(self.start_time).as_millis())
     }
 
     /// 计算总时长
     ///
     /// 返回从流开始到流结束的毫秒数
     pub fn total_duration_ms(&self) -> Option<u128> {
-        self.end_time.map(|t| t.duration_since(self.start_time).as_millis())
+        self.end_time
+            .map(|t| t.duration_since(self.start_time).as_millis())
     }
 
     /// 计算流式时长
@@ -246,6 +251,7 @@ mod abort_tests {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use kode_core::message::TextBlock;
 
     #[tokio::test]
     async fn test_abort_signal() {
@@ -266,7 +272,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_abort_handle_is_aborted() {
-        let (signal, handle) = AbortSignal::new();
+        let (signal, mut handle) = AbortSignal::new();
 
         // 初始状态未被中断
         assert!(!handle.is_aborted());
@@ -287,6 +293,71 @@ mod tests {
 
         // 然后等待，应该立即返回
         handle.aborted().await;
+    }
+
+    #[test]
+    fn test_api_response_serialization() {
+        let response = ApiResponse {
+            id: "test-id".to_string(),
+            r#type: "message".to_string(),
+            role: "assistant".to_string(),
+            content: vec![ContentBlock::Text(TextBlock {
+                text: "Hello!".to_string(),
+            })],
+            stop_reason: Some("stop".to_string()),
+            stop_sequence: None,
+            model: "claude-sonnet-4-20250514".to_string(),
+            usage: ApiUsage {
+                input_tokens: 10,
+                output_tokens: 5,
+                thinking_tokens: None,
+            },
+        };
+
+        let json = serde_json::to_string(&response).unwrap();
+        let parsed: ApiResponse = serde_json::from_str(&json).unwrap();
+
+        assert_eq!(parsed.id, "test-id");
+        assert_eq!(parsed.model, "claude-sonnet-4-20250514");
+        assert_eq!(parsed.usage.input_tokens, 10);
+        assert_eq!(parsed.usage.output_tokens, 5);
+    }
+
+    #[test]
+    fn test_server_sent_event_serialization() {
+        let event = ServerSentEvent {
+            r#type: "content_block_delta".to_string(),
+            role: None,
+            content_block: None,
+            delta: Some(DeltaEvent {
+                text_delta: Some("Hello".to_string()),
+                input_json_delta: None,
+            }),
+            index: Some(0),
+            stop_reason: None,
+            usage: None,
+        };
+
+        let json = serde_json::to_string(&event).unwrap();
+        let parsed: ServerSentEvent = serde_json::from_str(&json).unwrap();
+
+        assert_eq!(parsed.r#type, "content_block_delta");
+        assert_eq!(parsed.delta.unwrap().text_delta.unwrap(), "Hello");
+    }
+
+    #[test]
+    fn test_api_usage_serialization() {
+        let usage = ApiUsage {
+            input_tokens: 100,
+            output_tokens: 50,
+            thinking_tokens: None,
+        };
+
+        let json = serde_json::to_string(&usage).unwrap();
+        let parsed: ApiUsage = serde_json::from_str(&json).unwrap();
+
+        assert_eq!(parsed.input_tokens, 100);
+        assert_eq!(parsed.output_tokens, 50);
     }
 }
 
@@ -424,77 +495,6 @@ pub struct DeltaEvent {
     #[serde(skip_serializing_if = "Option::is_none")]
     #[serde(rename = "input_json_delta")]
     pub input_json_delta: Option<String>,
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-    use kode_core::message::TextBlock;
-
-    #[test]
-    fn test_api_response_serialization() {
-        let response = ApiResponse {
-            id: "test-id".to_string(),
-            r#type: "message".to_string(),
-            role: "assistant".to_string(),
-            content: vec![ContentBlock::Text(TextBlock {
-                text: "Hello!".to_string(),
-            })],
-            stop_reason: Some("stop".to_string()),
-            stop_sequence: None,
-            model: "claude-sonnet-4-20250514".to_string(),
-            usage: ApiUsage {
-                input_tokens: 10,
-                output_tokens: 5,
-                thinking_tokens: None,
-            },
-        };
-
-        let json = serde_json::to_string(&response).unwrap();
-        let parsed: ApiResponse = serde_json::from_str(&json).unwrap();
-
-        assert_eq!(parsed.id, "test-id");
-        assert_eq!(parsed.model, "claude-sonnet-4-20250514");
-        assert_eq!(parsed.usage.input_tokens, 10);
-        assert_eq!(parsed.usage.output_tokens, 5);
-    }
-
-    #[test]
-    fn test_server_sent_event_serialization() {
-        let event = ServerSentEvent {
-            r#type: "content_block_delta".to_string(),
-            role: None,
-            content_block: None,
-            delta: Some(DeltaEvent {
-                text_delta: Some("Hello".to_string()),
-                input_json_delta: None,
-            }),
-            index: Some(0),
-            stop_reason: None,
-            usage: None,
-        };
-
-        let json = serde_json::to_string(&event).unwrap();
-        let parsed: ServerSentEvent = serde_json::from_str(&json).unwrap();
-
-        assert_eq!(parsed.r#type, "content_block_delta");
-        assert_eq!(parsed.delta.unwrap().text_delta.unwrap(), "Hello");
-    }
-
-    #[test]
-    fn test_api_usage_serialization() {
-        let usage = ApiUsage {
-            input_tokens: 100,
-            output_tokens: 50,
-            thinking_tokens: None,
-        };
-
-        let json = serde_json::to_string(&usage).unwrap();
-        let parsed: ApiUsage = serde_json::from_str(&json).unwrap();
-
-        assert_eq!(parsed.input_tokens, 100);
-        assert_eq!(parsed.output_tokens, 50);
-    }
 }
 
 /// API 错误响应

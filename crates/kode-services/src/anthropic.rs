@@ -12,7 +12,7 @@ use kode_core::model::streaming::StreamingResponse;
 use reqwest::{Client, ClientBuilder, StatusCode};
 use serde_json::Value;
 use std::time::Duration;
-use tracing::debug;
+use tracing::{debug, error};
 
 pub mod cache;
 pub mod cost;
@@ -289,7 +289,8 @@ impl ModelAdapter for AnthropicService {
         system_prompt: Option<String>,
         max_tokens: usize,
     ) -> Result<ModelResponse> {
-        self.send_message_with_retry(messages, system_prompt, max_tokens, None).await
+        self.send_message_with_retry(messages, system_prompt, max_tokens, None)
+            .await
     }
 
     async fn stream_message(
@@ -364,7 +365,8 @@ impl AnthropicService {
                                 return self.parse_response(api_response);
                             }
                             Err(e) => {
-                                last_error = Some(anyhow::anyhow!("Failed to parse response: {}", e));
+                                last_error =
+                                    Some(anyhow::anyhow!("Failed to parse response: {}", e));
                             }
                         }
                     } else if response.status() == 429 || response.status().is_server_error() {
@@ -401,7 +403,9 @@ impl AnthropicService {
         }
 
         Err(kode_core::error::Error::ModelRequestError(
-            last_error.unwrap_or_else(|| anyhow::anyhow!("Unknown error")).to_string(),
+            last_error
+                .unwrap_or_else(|| anyhow::anyhow!("Unknown error"))
+                .to_string(),
         ))
     }
 
@@ -469,7 +473,8 @@ impl AnthropicService {
             // 跟踪当前 block 的类型和 JSON 缓存
             let mut current_block_index: Option<usize> = None;
             let mut current_block_type: Option<String> = None;
-            let mut json_buffers: std::collections::HashMap<usize, String> = std::collections::HashMap::new();
+            let mut json_buffers: std::collections::HashMap<usize, String> =
+                std::collections::HashMap::new();
 
             // 创建性能监控指标
             let mut metrics = StreamMetrics::new();
@@ -610,6 +615,15 @@ impl AnthropicService {
                                                                 // 如果是 tool_use，在 stop 时发送完整的事件
                                                                 if current_block_type.as_deref() == Some("tool_use") {
                                                                     if let Some(json_str) = json_buffers.remove(&index) {
+                                                                        // 验证 JSON 是否有效
+                                                                        if let Err(e) = serde_json::from_str::<serde_json::Value>(&json_str) {
+                                                                            // JSON 解析失败，记录错误
+                                                                            metrics.increment_error();
+                                                                            error!(target: "kode_services",
+                                                                                   "ANTHROPIC_STREAM_JSON_PARSE_ERROR: Invalid tool parameters JSON at index {}: {}. Raw: {}",
+                                                                                   index, e, json_str);
+                                                                        }
+
                                                                         // 发送 tool_use 完整事件
                                                                         tx.send(Ok(
                                                                             kode_core::model::StreamChunk::tool_use_complete(index, json_str.clone()),
@@ -870,15 +884,15 @@ impl AnthropicClientManager {
     /// 如果配置发生变化或客户端不存在，则创建新客户端
     pub fn get_client(&mut self, config: &AnthropicConfig) -> Client {
         let config_hash = self.compute_config_hash(config);
-        
+
         // 检查是否需要重新创建客户端
         let needs_recreate = self.client.is_none() || self.config_hash != config_hash;
-        
+
         if needs_recreate {
             self.client = Some(self.build_client(config));
             self.config_hash = config_hash;
         }
-        
+
         self.last_used = std::time::Instant::now();
         self.client.as_ref().unwrap().clone()
     }

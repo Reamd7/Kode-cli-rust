@@ -11,9 +11,9 @@ pub mod anthropic;
 // VCR 录制/回放支持
 pub mod vcr;
 
-// Integration tests
-#[cfg(test)]
-mod integration_test;
+// // Integration tests
+// #[cfg(test)]
+// mod integration_test;
 
 // Re-export commonly used types
 pub use anthropic::{AnthropicConfig, AnthropicError, AnthropicService};

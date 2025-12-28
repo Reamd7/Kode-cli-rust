@@ -41,6 +41,9 @@ base64 = "0.22"
 # JSON Schema validation
 jsonschema = "0.18"
 
+# Async utilities
+tokio-util = "0.7"
+
 # Utilities
 uuid = { workspace = true }
 

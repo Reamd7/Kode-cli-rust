@@ -39,7 +39,7 @@ pub use file_utils::{LineEnding, ReadResult};
 pub use file_write::FileWriteTool;
 pub use registry::ToolRegistry;
 pub use secure_file::{FileInfo, SecureFileService, SecurityError};
-pub use tool::{Tool, ToolContext, ToolResult, ToolSchema, ValidationResult};
+pub use tool::{CancellationError, Tool, ToolContext, ToolResult, ToolSchema, ValidationResult};
 pub use validation::{FileValidator, PathValidator, ValidationError};
 
 use std::path::PathBuf;

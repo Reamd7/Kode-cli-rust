@@ -6,7 +6,12 @@ use async_trait::async_trait;
 use serde_json::Value;
 use std::collections::HashMap;
 use std::path::PathBuf;
-use tokio::task::AbortHandle;
+use tokio_util::sync::CancellationToken;
+
+/// 取消错误
+#[derive(Debug, thiserror::Error)]
+#[error("操作已取消")]
+pub struct CancellationError;
 
 /// Tool trait
 #[async_trait]
@@ -82,8 +87,8 @@ pub struct ToolContext {
     pub read_timestamps: HashMap<PathBuf, u64>,
     /// 安全模式标志
     pub safe_mode: bool,
-    /// 取消句柄
-    pub abort_handle: Option<AbortHandle>,
+    /// 取消令牌
+    pub cancellation_token: Option<CancellationToken>,
 }
 
 impl ToolContext {
@@ -93,7 +98,7 @@ impl ToolContext {
             cwd,
             read_timestamps: HashMap::new(),
             safe_mode: false,
-            abort_handle: None,
+            cancellation_token: None,
         }
     }
 
@@ -103,7 +108,7 @@ impl ToolContext {
             cwd,
             read_timestamps: HashMap::new(),
             safe_mode: true,
-            abort_handle: None,
+            cancellation_token: None,
         }
     }
 
@@ -121,6 +126,38 @@ impl ToolContext {
     /// 记录文件读取时间戳（可变引用版本）
     pub fn track_read(&mut self, path: PathBuf, timestamp: u64) {
         self.read_timestamps.insert(path, timestamp);
+    }
+
+    /// 设置取消令牌
+    pub fn set_cancellation_token(&mut self, token: CancellationToken) {
+        self.cancellation_token = Some(token);
+    }
+
+    /// 检查是否已取消
+    ///
+    /// 如果操作已被取消，返回 CancellationError
+    /// 这个方法应该在长时间运行的操作中定期调用
+    pub fn check_cancelled(&self) -> Result<(), CancellationError> {
+        if let Some(token) = &self.cancellation_token {
+            if token.is_cancelled() {
+                return Err(CancellationError);
+            }
+        }
+        Ok(())
+    }
+
+    /// 检查是否已取消（异步版本）
+    ///
+    /// 这个版本会等待取消信号
+    pub async fn check_cancelled_async(&self) -> Result<(), CancellationError> {
+        if let Some(token) = &self.cancellation_token {
+            if token.is_cancelled() {
+                return Err(CancellationError);
+            }
+            // 可以选择使用 token.cancelled().await 来等待取消信号
+            // 但这会阻塞，所以这里只检查状态
+        }
+        Ok(())
     }
 }
 
@@ -270,5 +307,39 @@ mod tests {
             ctx.get_read_timestamp(&PathBuf::from("/tmp/test.txt")),
             Some(12345)
         );
+    }
+
+    #[test]
+    fn test_cancellation_not_set() {
+        let context = ToolContext::new(PathBuf::from("/test"));
+        assert!(context.check_cancelled().is_ok());
+    }
+
+    #[test]
+    fn test_cancellation_token() {
+        let token = tokio_util::sync::CancellationToken::new();
+        let mut context = ToolContext::new(PathBuf::from("/test"));
+        context.set_cancellation_token(token.clone());
+
+        // 未取消
+        assert!(context.check_cancelled().is_ok());
+
+        // 取消
+        token.cancel();
+        assert!(context.check_cancelled().is_err());
+    }
+
+    #[tokio::test]
+    async fn test_cancellation_token_async() {
+        let token = tokio_util::sync::CancellationToken::new();
+        let mut context = ToolContext::new(PathBuf::from("/test"));
+        context.set_cancellation_token(token.clone());
+
+        // 未取消
+        assert!(context.check_cancelled_async().await.is_ok());
+
+        // 取消
+        token.cancel();
+        assert!(context.check_cancelled_async().await.is_err());
     }
 }

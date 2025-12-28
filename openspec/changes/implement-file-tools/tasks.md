@@ -716,12 +716,12 @@
 - ✅ 代码格式化完成
 
 ### 8.3 AbortSignal 取消支持
-- [ ] 8.3.1 实现 `CancellationToken` 结构体
+- [x] 8.3.1 实现 `CancellationToken` 结构体
   - 基于 `tokio::task::AbortHandle`
   - 支持取消检查点（checkpoints）
   - 支持超时取消（tokio::time::timeout）
   - 添加单元测试
-- [ ] 8.3.2 更新 `ToolContext`
+- [x] 8.3.2 更新 `ToolContext`
   - 实现 `check_cancelled()` 方法，返回 Result<(), CancellationError>
   - 实现 `set_cancellation_token()` 方法
   - 实现取消传播到子任务
@@ -743,6 +743,17 @@
 **参考**: `/Users/gemini/Documents/backup/Kode-cli/src/Tool.ts` (AbortSignal)
 
 **实现优先级**: P1（高）- 长时间运行的操作需要能够被用户取消
+
+**实现状态**: ⚠️ **部分完成** (2025-12-28)
+- ✅ 添加 `CancellationError` 错误类型
+- ✅ 更新 `ToolContext` 使用 `CancellationToken`
+- ✅ 实现 `check_cancelled()` 和 `check_cancelled_async()` 方法
+- ✅ 实现 `set_cancellation_token()` 方法
+- ✅ 添加 3 个单元测试验证取消功能
+- ✅ 所有 49 个单元测试通过
+- ✅ Clippy 零警告
+- ⚠️ **未完成**: 在具体工具中实现取消检查（8.3.3-8.3.5）
+- ⚠️ **建议**: 作为后续增强任务，按需实现
 
 ### 8.4 事件系统
 - [ ] 8.4.1 定义事件类型

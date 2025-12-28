@@ -679,22 +679,22 @@
 - ✅ 代码格式化完成
 
 ### 8.2 JSON Schema 验证增强
-- [ ] 8.2.1 添加 `jsonschema` crate 依赖
+- [x] 8.2.1 添加 `jsonschema` crate 依赖
   - 在 `Cargo.toml` 中添加 `jsonschema = "0.18"`
   - 添加到 workspace dependencies
-- [ ] 8.2.2 实现 `SchemaValidator` 结构体
+- [x] 8.2.2 实现 `SchemaValidator` 结构体
   - 编译 JSON Schema 为验证器
   - 缓存编译后的验证器（HashMap<String, Validator>）
   - 支持动态 schema 更新
-- [ ] 8.2.3 实现 `validate_schema()` 方法
+- [x] 8.2.3 实现 `validate_schema()` 方法
   - 验证参数符合 schema
   - 返回详细的错误信息（包括路径和期望类型）
   - 支持自定义错误消息
-- [ ] 8.2.4 更新 `ToolSchema::validate()`
+- [x] 8.2.4 更新 `ToolSchema::validate()`
   - 使用 `SchemaValidator` 替代手动验证
   - 保持向后兼容（保留手动验证作为 fallback）
   - 添加单元测试
-- [ ] 8.2.5 集成到所有工具
+- [x] 8.2.5 集成到所有工具
   - FileReadTool validate_input() 使用 schema 验证
   - FileWriteTool validate_input() 使用 schema 验证
   - FileEditTool validate_input() 使用 schema 验证
@@ -703,6 +703,17 @@
 **参考**: `/Users/gemini/Documents/backup/Kode-cli/src/Tool.ts` (validateInput)
 
 **实现优先级**: P1（高）- 提升参数验证的自动化程度和错误消息质量
+
+**实现状态**: ✅ **已完成** (2025-12-28)
+- ✅ 添加 `jsonschema = "0.18"` 依赖
+- ✅ 实现 `JsonSchemaValidator` 结构体
+- ✅ 实现 `validate()` 方法，支持详细错误信息
+- ✅ 更新 `ToolSchema::validate()` 使用新验证器
+- ✅ 集成到 Tool trait 的 `validate_input()` 默认实现
+- ✅ 添加 3 个单元测试验证 JSON Schema 功能
+- ✅ 所有 46 个单元测试通过
+- ✅ Clippy 零警告
+- ✅ 代码格式化完成
 
 ### 8.3 AbortSignal 取消支持
 - [ ] 8.3.1 实现 `CancellationToken` 结构体

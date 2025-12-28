@@ -1,5 +1,6 @@
 //! Tool trait 定义
 
+use crate::validation::JsonSchemaValidator;
 use anyhow::Result;
 use async_trait::async_trait;
 use serde_json::Value;
@@ -58,9 +59,16 @@ pub struct ToolSchema {
 
 impl ToolSchema {
     /// 验证参数是否符合 schema
-    pub fn validate(&self, _params: &Value) -> Result<()> {
-        // TODO: 实现 JSON Schema 验证（需要 jsonschema crate）
-        // 现在先做基本验证
+    ///
+    /// 使用 JSON Schema 验证器进行参数验证
+    pub fn validate(&self, params: &Value) -> Result<()> {
+        // 使用 JsonSchemaValidator 进行验证
+        let validator = JsonSchemaValidator::new();
+
+        validator
+            .validate(&self.parameters, params)
+            .map_err(|e| anyhow::anyhow!("参数验证失败: {}", e))?;
+
         Ok(())
     }
 }

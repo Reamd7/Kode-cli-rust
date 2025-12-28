@@ -191,7 +191,8 @@ mod tests {
         assert_eq!(MAX_WIDTH, 2000);
         assert_eq!(MAX_HEIGHT, 2000);
         assert_eq!(MAX_IMAGE_SIZE, 3_750_000);
-        assert_eq!(JPEG_QUALITY, 80);
+        // JPEG_QUALITY is commented out for future use
+        // assert_eq!(JPEG_QUALITY, 80);
     }
 
     #[cfg(feature = "image")]

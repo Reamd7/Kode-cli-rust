@@ -38,6 +38,9 @@ similar = "2.5"
 # Base64
 base64 = "0.22"
 
+# JSON Schema validation
+jsonschema = "0.18"
+
 # Utilities
 uuid = { workspace = true }
 

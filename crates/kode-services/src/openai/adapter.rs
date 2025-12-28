@@ -2,6 +2,7 @@
 //!
 //! 处理不同模型的参数差异，实现参数自适应转换。
 
+use crate::openai::cache::SessionCache;
 use crate::openai::types::{ChatCompletionRequest, OpenAIModelFeatures};
 use tracing::debug;
 
@@ -105,6 +106,46 @@ pub fn apply_model_transformations(
     }
 }
 
+/// 预应用已知的修复（基于 Session 缓存）
+///
+/// 检查缓存中是否有已知的错误类型，并预先应用相应的修复。
+///
+/// # Arguments
+///
+/// * `request` - 可变引用的聊天完成请求
+/// * `session_cache` - Session 缓存
+pub fn apply_cached_fixes(request: &mut ChatCompletionRequest, session_cache: &SessionCache) {
+    let model_name = &request.model;
+    let known_errors = session_cache.get_model_errors(model_name);
+
+    for error_type in known_errors {
+        match error_type.as_str() {
+            "max_tokens_not_supported" => {
+                if request.max_tokens.is_some() {
+                    debug!(
+                        "Pre-applying fix: Converting max_tokens to max_completion_tokens (cached)"
+                    );
+                    request.max_completion_tokens = request.max_tokens;
+                    request.max_tokens = None;
+                }
+            }
+            "temperature_must_be_1" => {
+                if request.temperature.is_some_and(|t| t != 1.0) {
+                    debug!("Pre-applying fix: Setting temperature to 1 (cached)");
+                    request.temperature = Some(1.0);
+                }
+            }
+            "stream_options_not_supported" => {
+                if request.stream_options.is_some() {
+                    debug!("Pre-applying fix: Removing stream_options (cached)");
+                    request.stream_options = None;
+                }
+            }
+            _ => {}
+        }
+    }
+}
+
 /// 检测可修复错误
 ///
 /// 检查错误消息是否包含可自动修复的问题。
@@ -146,19 +187,25 @@ pub fn detect_fixable_error(error_message: &str) -> bool {
 
 /// 尝试自动修复请求参数
 ///
-/// 根据错误消息自动调整请求参数。
+/// 根据错误消息自动调整请求参数，并缓存已知的错误类型。
 ///
 /// # Arguments
 ///
 /// * `request` - 可变引用的聊天完成请求
 /// * `error_message` - 错误消息
+/// * `session_cache` - 可选的 Session 缓存
 ///
 /// # Returns
 ///
 /// 是否成功应用修复
-pub fn try_fix_request(request: &mut ChatCompletionRequest, error_message: &str) -> bool {
+pub fn try_fix_request(
+    request: &mut ChatCompletionRequest,
+    error_message: &str,
+    session_cache: Option<&SessionCache>,
+) -> bool {
     let lower = error_message.to_lowercase();
     let mut fixed = false;
+    let model_name = request.model.clone();
 
     // 修复 max_tokens → max_completion_tokens
     if lower.contains("max_tokens")
@@ -169,6 +216,15 @@ pub fn try_fix_request(request: &mut ChatCompletionRequest, error_message: &str)
             request.max_completion_tokens = Some(max_tokens);
             request.max_tokens = None;
             fixed = true;
+
+            // 缓存错误类型和修复
+            if let Some(cache) = session_cache {
+                cache.cache_model_error(&model_name, "max_tokens_not_supported");
+                cache.record_applied_fix(
+                    &model_name,
+                    "converted_max_tokens_to_max_completion_tokens",
+                );
+            }
         }
     }
 
@@ -177,6 +233,12 @@ pub fn try_fix_request(request: &mut ChatCompletionRequest, error_message: &str)
         debug!("Auto-fix: Setting temperature to 1");
         request.temperature = Some(1.0);
         fixed = true;
+
+        // 缓存错误类型和修复
+        if let Some(cache) = session_cache {
+            cache.cache_model_error(&model_name, "temperature_must_be_1");
+            cache.record_applied_fix(&model_name, "set_temperature_to_1");
+        }
     }
 
     // 移除 stream_options
@@ -184,6 +246,12 @@ pub fn try_fix_request(request: &mut ChatCompletionRequest, error_message: &str)
         debug!("Auto-fix: Removing stream_options");
         request.stream_options = None;
         fixed = true;
+
+        // 缓存错误类型和修复
+        if let Some(cache) = session_cache {
+            cache.cache_model_error(&model_name, "stream_options_not_supported");
+            cache.record_applied_fix(&model_name, "removed_stream_options");
+        }
     }
 
     fixed
@@ -245,6 +313,7 @@ mod tests {
         let fixed = try_fix_request(
             &mut request,
             "Use 'max_completion_tokens' instead of 'max_tokens'",
+            None,
         );
         assert!(fixed);
         assert!(request.max_completion_tokens.is_some());
@@ -275,5 +344,35 @@ mod tests {
         assert_eq!(request.temperature, Some(1.0));
         // GPT-5 supports Responses API, so stream_options should NOT be removed
         assert!(request.stream_options.is_some()); // GPT-5 supports it, but let's verify logic
+    }
+
+    #[test]
+    fn test_apply_cached_fixes() {
+        let cache = SessionCache::new();
+        let mut request = ChatCompletionRequest {
+            model: "gpt-5".to_string(),
+            messages: vec![],
+            max_tokens: Some(1000),
+            max_completion_tokens: None,
+            temperature: Some(0.7),
+            tools: None,
+            tool_choice: None,
+            stream: None,
+            stream_options: Some(StreamOptions {
+                include_usage: true,
+            }),
+        };
+
+        // 缓存一些错误
+        cache.cache_model_error("gpt-5", "max_tokens_not_supported");
+        cache.cache_model_error("gpt-5", "temperature_must_be_1");
+
+        // 应用缓存的修复
+        apply_cached_fixes(&mut request, &cache);
+
+        // 验证修复已应用
+        assert!(request.max_completion_tokens.is_some());
+        assert!(request.max_tokens.is_none());
+        assert_eq!(request.temperature, Some(1.0));
     }
 }

@@ -49,6 +49,10 @@ pub enum OpenAIError {
     /// 可修复的模型错误
     #[error("Fixable model error: {0}")]
     FixableModelError(String),
+
+    /// 操作被取消
+    #[error("Operation was cancelled")]
+    Cancelled,
 }
 
 impl OpenAIError {
@@ -62,6 +66,7 @@ impl OpenAIError {
                     Some("429") | Some("500") | Some("502") | Some("503") | Some("504")
                 )
             }
+            Self::Cancelled => false, // 取消操作不可重试
             _ => false,
         }
     }

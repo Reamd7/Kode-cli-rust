@@ -14,10 +14,14 @@ use kode_core::{
 };
 use reqwest::{Client, ClientBuilder};
 use std::time::Duration;
+use tokio_util::sync::CancellationToken;
 use tracing::{debug, error, info, warn};
 
 use crate::openai::{
-    adapter::{apply_model_transformations, get_model_features, try_fix_request},
+    adapter::{
+        apply_cached_fixes, apply_model_transformations, get_model_features, try_fix_request,
+    },
+    cache::SessionCache,
     pricing::calculate_cost,
     streaming::SseStreamProcessor,
     types::{
@@ -52,6 +56,10 @@ pub struct OpenAIService {
     config: Config,
     /// 模型特性
     model_features: OpenAIModelFeatures,
+    /// Session 缓存（用于缓存已知错误和应用的修复）
+    session_cache: SessionCache,
+    /// 取消令牌（用于取消长时间运行的请求）
+    cancellation_token: Option<CancellationToken>,
 }
 
 impl OpenAIService {
@@ -131,6 +139,8 @@ impl OpenAIService {
                 max_tokens: config.max_tokens,
             },
             model_features,
+            session_cache: SessionCache::new(),
+            cancellation_token: None,
         }
     }
 
@@ -159,6 +169,29 @@ impl OpenAIService {
     /// 获取模型名称
     pub fn model_name(&self) -> &str {
         &self.config.model_name
+    }
+
+    /// 设置取消令牌
+    ///
+    /// # Arguments
+    ///
+    /// * `token` - CancellationToken 实例
+    pub fn set_cancellation_token(&mut self, token: CancellationToken) {
+        self.cancellation_token = Some(token);
+    }
+
+    /// 检查是否已取消
+    ///
+    /// 如果操作已被取消，返回错误
+    #[allow(dead_code)]
+    fn check_cancelled(&self) -> std::result::Result<(), OpenAIError> {
+        if let Some(token) = &self.cancellation_token {
+            if token.is_cancelled() {
+                warn!("Request was cancelled");
+                return Err(OpenAIError::Cancelled);
+            }
+        }
+        Ok(())
     }
 
     /// 获取 API 端点
@@ -195,25 +228,11 @@ impl OpenAIService {
         tools: Option<&[serde_json::Value]>,
         stream: bool,
     ) -> std::result::Result<ChatCompletionRequest, OpenAIError> {
-        // 转换消息为 OpenAI 格式
-        let mut openai_messages = Vec::new();
+        // 构建工具定义（带描述截断），并收集被截断的指令
+        const MAX_DESCRIPTION_LENGTH: usize = 1024;
+        let mut additional_tool_instructions = Vec::new();
 
-        // 添加系统提示词（如果提供）
-        if let Some(system) = system_prompt {
-            openai_messages.push(ChatMessage::System {
-                content: system.to_string(),
-            });
-        }
-
-        // 转换消息列表
-        for msg in messages {
-            openai_messages.push(self.message_to_openai(msg)?);
-        }
-
-        // 构建工具定义（带描述截断）
         let openai_tools = tools.map(|tools| {
-            const MAX_DESCRIPTION_LENGTH: usize = 1024;
-
             tools
                 .iter()
                 .map(|tool| {
@@ -224,35 +243,29 @@ impl OpenAIService {
                         .and_then(|d| d.as_str().map(String::from));
 
                     // 检查描述长度并截断
-                    let (description, _truncated_instructions) =
-                        if let Some(desc) = &original_description {
-                            if desc.len() > MAX_DESCRIPTION_LENGTH {
-                                warn!(
-                                    "Tool '{}' description exceeds {} chars, truncating",
-                                    tool_name, MAX_DESCRIPTION_LENGTH
-                                );
+                    let description = if let Some(desc) = &original_description {
+                        if desc.len() > MAX_DESCRIPTION_LENGTH {
+                            warn!(
+                                "Tool '{}' description exceeds {} chars, truncating",
+                                tool_name, MAX_DESCRIPTION_LENGTH
+                            );
 
-                                // 截断描述
-                                let truncated = &desc[..MAX_DESCRIPTION_LENGTH];
-                                let remaining = &desc[MAX_DESCRIPTION_LENGTH..];
+                            // 截断描述
+                            let truncated = &desc[..MAX_DESCRIPTION_LENGTH];
+                            let remaining = &desc[MAX_DESCRIPTION_LENGTH..];
 
-                                // 将截断的部分作为额外指令
-                                let extra_instructions = format!(
-                                    "<additional-tool-usage-instructions>\nTool '{}':\n{}\n</additional-tool-usage-instructions>",
-                                    tool_name, remaining
-                                );
+                            // 将截断的部分收集为额外指令
+                            let extra_instructions =
+                                format!("Tool '{}':\n{}", tool_name, remaining);
+                            additional_tool_instructions.push(extra_instructions);
 
-                                (Some(truncated.to_string()), Some(extra_instructions))
-                            } else {
-                                (original_description.clone(), None)
-                            }
+                            Some(truncated.to_string())
                         } else {
-                            (None, None)
-                        };
-
-                    // 如果有截断的指令，添加到系统提示词中
-                    // 这里我们暂时忽略 _truncated_instructions，因为需要在系统提示级别处理
-                    // TODO: 在未来的版本中，可以将 truncated_instructions 添加到系统消息
+                            original_description.clone()
+                        }
+                    } else {
+                        None
+                    };
 
                     ToolDefinition {
                         tool_type: ToolType::Function,
@@ -265,6 +278,45 @@ impl OpenAIService {
                 })
                 .collect()
         });
+
+        // 转换消息为 OpenAI 格式
+        let mut openai_messages = Vec::new();
+
+        // 构建系统提示词（包含额外的工具指令）
+        let system_content = if let Some(system) = system_prompt {
+            if !additional_tool_instructions.is_empty() {
+                // 将额外的工具指令添加到系统提示词
+                let additional = additional_tool_instructions.join("\n\n");
+                format!(
+                    "{}\n\n<additional-tool-usage-instructions>\n{}</additional-tool-usage-instructions>",
+                    system, additional
+                )
+            } else {
+                system.to_string()
+            }
+        } else if !additional_tool_instructions.is_empty() {
+            // 如果没有系统提示词但有额外指令，创建一个默认的系统提示词
+            let additional = additional_tool_instructions.join("\n\n");
+            format!(
+                "<additional-tool-usage-instructions>\n{}</additional-tool-usage-instructions>",
+                additional
+            )
+        } else {
+            // 既没有系统提示词也没有额外指令，不添加系统消息
+            String::new()
+        };
+
+        // 添加系统提示词（如果有内容）
+        if !system_content.is_empty() {
+            openai_messages.push(ChatMessage::System {
+                content: system_content,
+            });
+        }
+
+        // 转换消息列表
+        for msg in messages {
+            openai_messages.push(self.message_to_openai(msg)?);
+        }
 
         // 构建请求
         let has_tools = tools.is_some_and(|t| !t.is_empty());
@@ -304,6 +356,9 @@ impl OpenAIService {
 
         // 应用模型特定的参数转换
         apply_model_transformations(&mut request, &self.model_features);
+
+        // 预应用已知的修复（基于缓存）
+        apply_cached_fixes(&mut request, &self.session_cache);
 
         Ok(request)
     }
@@ -522,7 +577,7 @@ impl OpenAIService {
             // 检查是否为可修复的错误
             if attempt == 1 && crate::openai::adapter::detect_fixable_error(&error_text) {
                 debug!("Detected fixable error: {}", error_text);
-                if try_fix_request(&mut request_body, &error_text) {
+                if try_fix_request(&mut request_body, &error_text, Some(&self.session_cache)) {
                     debug!("Applied fix, retrying...");
                     continue;
                 }
@@ -534,7 +589,15 @@ impl OpenAIService {
             {
                 let delay = calculate_retry_delay_with_jitter(attempt, retry_after);
                 debug!("Retryable error, waiting {}ms...", delay);
-                tokio::time::sleep(Duration::from_millis(delay)).await;
+                abortable_delay(delay, self.cancellation_token.as_ref())
+                    .await
+                    .map_err(|e| match e {
+                        OpenAIError::Cancelled => {
+                            info!("Request cancelled during retry delay");
+                            e
+                        }
+                        _ => e,
+                    })?;
                 continue;
             }
 
@@ -625,6 +688,50 @@ impl OpenAIService {
 ///
 /// * `attempt` - 当前重试次数（从 1 开始）
 /// * `retry_after_ms` - 可选的服务器建议延迟（毫秒）
+///
+/// # Returns
+///
+/// 延迟时间（毫秒）
+async fn abortable_delay(
+    delay_ms: u64,
+    cancellation_token: Option<&CancellationToken>,
+) -> std::result::Result<(), OpenAIError> {
+    use tokio::time::{sleep, Duration};
+
+    // 检查是否已取消
+    if let Some(token) = cancellation_token {
+        if token.is_cancelled() {
+            return Err(OpenAIError::Cancelled);
+        }
+    }
+
+    // 创建睡眠任务
+    let sleep_future = sleep(Duration::from_millis(delay_ms));
+
+    // 如果有取消令牌，使用 tokio::select! 宏等待取消或睡眠完成
+    if let Some(token) = cancellation_token {
+        let cancel_future = token.cancelled();
+
+        tokio::select! {
+            _ = sleep_future => Ok(()),
+            _ = cancel_future => {
+                warn!("Delay was cancelled after {}ms", delay_ms);
+                Err(OpenAIError::Cancelled)
+            }
+        }
+    } else {
+        // 没有取消令牌，直接睡眠
+        sleep_future.await;
+        Ok(())
+    }
+}
+
+/// 计算重试延迟（带指数退避和抖动）
+///
+/// # Arguments
+///
+/// * `attempt` - 当前尝试次数
+/// * `retry_after_ms` - 服务器建议的等待时间（毫秒）
 ///
 /// # Returns
 ///
@@ -906,5 +1013,122 @@ mod tests {
         let features = get_model_features("gpt-4");
         assert!(!features.uses_max_completion_tokens);
         assert!(!features.requires_temperature_one);
+    }
+
+    #[test]
+    fn test_cancellation_token_not_set() {
+        use crate::openai::types;
+
+        let config = types::OpenAIConfig {
+            api_key: "test-key".to_string(),
+            base_url: "https://api.openai.com/v1".to_string(),
+            model_name: "gpt-4".to_string(),
+            max_tokens: 4096,
+            proxy: None,
+        };
+
+        let service = OpenAIService::new(config);
+        // 没有设置取消令牌，check_cancelled 应该成功
+        assert!(service.check_cancelled().is_ok());
+    }
+
+    #[test]
+    fn test_cancellation_token_not_cancelled() {
+        use crate::openai::types;
+
+        let config = types::OpenAIConfig {
+            api_key: "test-key".to_string(),
+            base_url: "https://api.openai.com/v1".to_string(),
+            model_name: "gpt-4".to_string(),
+            max_tokens: 4096,
+            proxy: None,
+        };
+
+        let mut service = OpenAIService::new(config);
+        let token = tokio_util::sync::CancellationToken::new();
+        service.set_cancellation_token(token);
+
+        // 未取消，check_cancelled 应该成功
+        assert!(service.check_cancelled().is_ok());
+    }
+
+    #[tokio::test]
+    async fn test_cancellation_token_cancelled() {
+        use crate::openai::types;
+
+        let config = types::OpenAIConfig {
+            api_key: "test-key".to_string(),
+            base_url: "https://api.openai.com/v1".to_string(),
+            model_name: "gpt-4".to_string(),
+            max_tokens: 4096,
+            proxy: None,
+        };
+
+        let mut service = OpenAIService::new(config);
+        let token = tokio_util::sync::CancellationToken::new();
+        service.set_cancellation_token(token.clone());
+
+        // 取消令牌
+        token.cancel();
+
+        // 已取消，check_cancelled 应该返回错误
+        assert!(service.check_cancelled().is_err());
+        if let Err(OpenAIError::Cancelled) = service.check_cancelled() {
+            // 正确的错误类型
+        } else {
+            panic!("Expected Cancelled error");
+        }
+    }
+
+    #[tokio::test]
+    async fn test_abortable_delay_not_cancelled() {
+        // 测试正常延迟（未取消）
+        let start = std::time::Instant::now();
+        let result = abortable_delay(100, None).await;
+        assert!(result.is_ok());
+        assert!(start.elapsed().as_millis() >= 100);
+    }
+
+    #[tokio::test]
+    async fn test_abortable_delay_cancelled() {
+        // 测试取消延迟
+        let token = tokio_util::sync::CancellationToken::new();
+        let token_clone = token.clone();
+
+        // 在 50ms 后取消
+        tokio::spawn(async move {
+            tokio::time::sleep(std::time::Duration::from_millis(50)).await;
+            token_clone.cancel();
+        });
+
+        let start = std::time::Instant::now();
+        let result = abortable_delay(200, Some(&token)).await;
+
+        // 应该被取消
+        assert!(result.is_err());
+        if let Err(OpenAIError::Cancelled) = result {
+            // 正确的错误类型
+        } else {
+            panic!("Expected Cancelled error");
+        }
+
+        // 应该在 50ms 左右被取消，而不是完整的 200ms
+        let elapsed = start.elapsed().as_millis();
+        assert!(elapsed < 150); // 应该远小于 200ms
+    }
+
+    #[tokio::test]
+    async fn test_abortable_delay_already_cancelled() {
+        // 测试在调用 abortable_delay 之前就已经取消的情况
+        let token = tokio_util::sync::CancellationToken::new();
+        token.cancel();
+
+        let result = abortable_delay(100, Some(&token)).await;
+        assert!(result.is_err());
+        if let Err(OpenAIError::Cancelled) = result {
+            // 正确的错误类型
+        } else {
+            panic!("Expected Cancelled error");
+        }
     }
 }

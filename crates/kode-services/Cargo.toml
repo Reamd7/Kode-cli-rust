@@ -32,6 +32,9 @@ thiserror = { workspace = true }
 # Logging
 tracing = { workspace = true }
 
+# Random
+rand = "0.8"
+
 # VCR
 sha2 = "0.10"
 hex = "0.4"

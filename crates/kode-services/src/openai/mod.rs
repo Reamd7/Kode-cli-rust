@@ -3,11 +3,15 @@
 //! 提供与 OpenAI API 及其兼容服务（DeepSeek、MiniMax 等）的客户端实现。
 
 pub mod adapter;
+pub mod cache;
 pub mod error;
+pub mod pricing;
 pub mod service;
 pub mod streaming;
 pub mod types;
 
+pub use cache::SessionCache;
 pub use error::OpenAIError;
+pub use pricing::{calculate_cost, get_model_pricing};
 pub use service::OpenAIService;
 pub use types::{OpenAIConfig, OpenAIModelFeatures};

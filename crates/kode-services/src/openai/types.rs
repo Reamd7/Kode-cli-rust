@@ -17,6 +17,8 @@ pub struct OpenAIConfig {
     pub model_name: String,
     /// 最大输出 token 数
     pub max_tokens: usize,
+    /// 代理 URL（可选）
+    pub proxy: Option<String>,
 }
 
 /// OpenAI 聊天消息

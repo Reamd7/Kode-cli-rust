@@ -19,6 +19,8 @@ pub struct ModelResponse {
     pub usage: TokenUsage,
     /// 模型名称
     pub model: String,
+    /// 成本（美元）
+    pub cost_usd: Option<f64>,
 }
 
 /// 模型适配器接口
@@ -52,6 +54,44 @@ pub trait ModelAdapter: Send + Sync {
         system_prompt: Option<String>,
         max_tokens: usize,
     ) -> Result<ModelResponse>;
+
+    /// 发送消息（非流式，支持工具调用）
+    ///
+    /// 向模型发送一系列消息和工具定义，等待完整响应。
+    ///
+    /// # Arguments
+    ///
+    /// * `messages` - 消息列表
+    /// * `system_prompt` - 系统提示词（可选）
+    /// * `max_tokens` - 最大输出 token 数
+    /// * `tools` - 工具定义列表（JSON 格式）
+    ///
+    /// # Returns
+    ///
+    /// 返回模型响应或错误。
+    ///
+    /// # Examples
+    ///
+    /// ```ignore
+    /// let tools = vec![serde_json::json!({
+    ///     "name": "bash",
+    ///     "description": "Execute bash commands",
+    ///     "input_schema": {...}
+    /// })];
+    /// let response = adapter.send_message_with_tools(messages, None, 4096, &tools).await?;
+    /// ```
+    async fn send_message_with_tools(
+        &self,
+        _messages: Vec<Message>,
+        _system_prompt: Option<String>,
+        _max_tokens: usize,
+        _tools: &[serde_json::Value],
+    ) -> Result<ModelResponse> {
+        // 默认实现：不支持工具调用，返回错误
+        Err(crate::error::Error::ModelRequestError(
+            "This adapter does not support tool calls".to_string(),
+        ))
+    }
 
     /// 发送消息（流式）
     ///
@@ -91,6 +131,57 @@ pub trait ModelAdapter: Send + Sync {
         system_prompt: Option<String>,
         max_tokens: usize,
     ) -> Result<crate::model::streaming::StreamingResponse>;
+
+    /// 发送消息（流式，支持工具调用）
+    ///
+    /// 向模型发送一系列消息和工具定义，返回流式响应。
+    ///
+    /// # Arguments
+    ///
+    /// * `messages` - 消息列表
+    /// * `system_prompt` - 系统提示词（可选）
+    /// * `max_tokens` - 最大输出 token 数
+    /// * `tools` - 工具定义列表（JSON 格式）
+    ///
+    /// # Returns
+    ///
+    /// 返回流块流或错误。
+    ///
+    /// # Examples
+    ///
+    /// ```ignore
+    /// use futures::stream::StreamExt;
+    ///
+    /// let tools = vec![serde_json::json!({
+    ///     "name": "bash",
+    ///     "description": "Execute bash commands",
+    ///     "input_schema": {...}
+    /// })];
+    /// let mut stream = adapter.stream_message_with_tools(messages, None, 4096, &tools).await?;
+    /// while let Some(chunk) = stream.next().await {
+    ///     match chunk? {
+    ///         StreamChunk::ContentBlockDelta { delta, .. } => {
+    ///             print!("{}", delta);
+    ///         }
+    ///         StreamChunk::MessageStop { usage } => {
+    ///             println!("\nTokens: {}", usage.total_tokens.unwrap());
+    ///         }
+    ///         _ => {}
+    ///     }
+    /// }
+    /// ```
+    async fn stream_message_with_tools(
+        &self,
+        _messages: Vec<Message>,
+        _system_prompt: Option<String>,
+        _max_tokens: usize,
+        _tools: &[serde_json::Value],
+    ) -> Result<crate::model::streaming::StreamingResponse> {
+        // 默认实现：不支持工具调用，返回错误
+        Err(crate::error::Error::ModelRequestError(
+            "This adapter does not support tool calls".to_string(),
+        ))
+    }
 
     /// 获取模型名称
     ///
@@ -144,8 +235,10 @@ mod tests {
                     input_tokens: 10,
                     output_tokens: 5,
                     total_tokens: Some(15),
+                    thinking_tokens: None,
                 },
                 model: self.name.clone(),
+                cost_usd: None,
             })
         }
 
@@ -166,6 +259,7 @@ mod tests {
                     input_tokens: 10,
                     output_tokens: 5,
                     total_tokens: Some(15),
+                    thinking_tokens: None,
                 })))
                 .await
                 .ok();

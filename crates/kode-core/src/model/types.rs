@@ -16,6 +16,9 @@ pub struct TokenUsage {
     /// 总 token 数量（可选）
     #[serde(skip_serializing_if = "Option::is_none")]
     pub total_tokens: Option<usize>,
+    /// 思考 token 数量（可选）
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub thinking_tokens: Option<usize>,
 }
 
 /// 流块类型
@@ -56,6 +59,15 @@ pub enum StreamChunk {
         tool_use_id: String,
         /// 工具参数（JSON 对象）
         parameters: serde_json::Value,
+    },
+
+    /// 工具使用完成（包含完整参数）
+    #[serde(rename = "tool_use_complete")]
+    ToolUseComplete {
+        /// 内容块索引
+        index: usize,
+        /// 完整参数（JSON 字符串）
+        parameters: String,
     },
 
     /// 消息结束（包含使用统计）
@@ -105,6 +117,14 @@ impl StreamChunk {
         }
     }
 
+    /// 创建工具使用完成事件
+    pub fn tool_use_complete(index: usize, parameters: impl Into<String>) -> Self {
+        Self::ToolUseComplete {
+            index,
+            parameters: parameters.into(),
+        }
+    }
+
     /// 创建消息结束事件
     pub fn message_stop(usage: TokenUsage) -> Self {
         Self::MessageStop { usage }
@@ -143,6 +163,7 @@ mod tests {
             input_tokens: 100,
             output_tokens: 50,
             total_tokens: Some(150),
+            thinking_tokens: None,
         };
 
         let json = serde_json::to_string(&usage).unwrap();

@@ -13,6 +13,11 @@ Anthropic Claude API is the primary AI service provider for Kode-Rust, requiring
 - 实现非流式 send_message 方法
 - 实现流式 stream_message 方法（SSE）
 - 实现 API 错误处理
+- 实现成本计算 (Cost calculation)
+- 实现缓存控制 (Prompt caching)
+- 实现 API Key 验证
+- 实现获取模型列表
+- 实现 Thinking token 支持
 - 添加集成测试
 
 - Implement `AnthropicService` struct
@@ -20,6 +25,11 @@ Anthropic Claude API is the primary AI service provider for Kode-Rust, requiring
 - Implement non-streaming send_message method
 - Implement streaming stream_message method (SSE)
 - Implement API error handling
+- Implement cost calculation
+- Implement prompt caching
+- Implement API key verification
+- Implement model list fetching
+- Implement thinking token support
 - Add integration tests
 
 ## Impact
@@ -31,4 +41,6 @@ Anthropic Claude API is the primary AI service provider for Kode-Rust, requiring
 - `crates/kode-services/src/anthropic.rs` (新建)
 - `crates/kode-services/src/anthropic/types.rs` (新建)
 - `crates/kode-services/src/anthropic/error.rs` (新建)
+- `crates/kode-services/src/anthropic/cost.rs` (新建 - 成本计算)
+- `crates/kode-services/src/anthropic/cache.rs` (新建 - 缓存控制)
 - `crates/kode-services/Cargo.toml` (添加 reqwest 依赖)

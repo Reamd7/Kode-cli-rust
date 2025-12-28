@@ -716,7 +716,8 @@ impl MessageContextManager {
     /// 是否需要压缩
     pub fn should_auto_compact_dynamic(&self) -> bool {
         let context_limit = Self::get_compression_model_context_limit();
-        let threshold = (context_limit as f64 * auto_compact_config::AUTO_COMPACT_THRESHOLD_RATIO) as usize;
+        let threshold =
+            (context_limit as f64 * auto_compact_config::AUTO_COMPACT_THRESHOLD_RATIO) as usize;
         self.current_tokens >= threshold
     }
 
@@ -1093,7 +1094,8 @@ mod tests {
         let mut context = std::collections::HashMap::new();
         context.insert("name".to_string(), "Alice".to_string());
 
-        let (formatted, reminders) = MessageContextManager::format_system_prompt_with_context(&system_prompt, &context);
+        let (formatted, reminders) =
+            MessageContextManager::format_system_prompt_with_context(&system_prompt, &context);
         assert!(formatted.contains("helpful"));
         assert!(formatted.contains("concise"));
         assert!(reminders.is_none()); // 简化实现不生成提醒

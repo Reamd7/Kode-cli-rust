@@ -7,6 +7,6 @@ pub mod manager;
 
 pub use freshness::{FileFreshnessService, FileTimestamp, FreshnessStatus};
 pub use manager::{
-    MessageContextManager, MessagePriority, RetentionPreference, RecoveredFile, TokenCounter,
+    MessageContextManager, MessagePriority, RecoveredFile, RetentionPreference, TokenCounter,
     TrimmingStrategy,
 };

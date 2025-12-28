@@ -80,7 +80,8 @@ impl FileFreshnessService {
                 last_agent_edit: None,
             };
 
-            self.read_timestamps.insert(file_path.to_string(), timestamp);
+            self.read_timestamps
+                .insert(file_path.to_string(), timestamp);
             self.session_files.insert(file_path.to_string());
         }
     }
@@ -118,7 +119,8 @@ impl FileFreshnessService {
                     size,
                     last_agent_edit: Some(now),
                 };
-                self.read_timestamps.insert(file_path.to_string(), timestamp);
+                self.read_timestamps
+                    .insert(file_path.to_string(), timestamp);
             }
         }
 
@@ -200,10 +202,7 @@ impl FileFreshnessService {
 
         // 检查文件是否存在
         if !Path::new(file_path).exists() {
-            return Some(format!(
-                "Note: {} was deleted since last read.",
-                file_path
-            ));
+            return Some(format!("Note: {} was deleted since last read.", file_path));
         }
 
         // 检查修改时间
@@ -236,10 +235,7 @@ impl FileFreshnessService {
                 file_path
             ))
         } else {
-            Some(format!(
-                "Note: {} is no longer accessible.",
-                file_path
-            ))
+            Some(format!("Note: {} is no longer accessible.", file_path))
         }
     }
 
@@ -326,7 +322,8 @@ impl FileFreshnessService {
     /// * `agent_id` - Agent ID
     /// * `file_path` - TODO 文件路径
     pub fn start_watching_todo_file(&mut self, agent_id: &str, file_path: &str) {
-        self.watched_todo_files.insert(agent_id.to_string(), file_path.to_string());
+        self.watched_todo_files
+            .insert(agent_id.to_string(), file_path.to_string());
 
         // 记录初始状态
         if Path::new(file_path).exists() {
@@ -373,7 +370,9 @@ impl FileFreshnessService {
             "venv/",
         ];
 
-        !invalid_patterns.iter().any(|pattern| file_path.contains(pattern))
+        !invalid_patterns
+            .iter()
+            .any(|pattern| file_path.contains(pattern))
     }
 }
 
@@ -469,9 +468,15 @@ mod tests {
 
     #[test]
     fn test_is_valid_for_recovery() {
-        assert!(!FileFreshnessService::is_valid_for_recovery("node_modules/package.json"));
-        assert!(!FileFreshnessService::is_valid_for_recovery("/tmp/file.txt"));
-        assert!(!FileFreshnessService::is_valid_for_recovery("target/debug/test"));
+        assert!(!FileFreshnessService::is_valid_for_recovery(
+            "node_modules/package.json"
+        ));
+        assert!(!FileFreshnessService::is_valid_for_recovery(
+            "/tmp/file.txt"
+        ));
+        assert!(!FileFreshnessService::is_valid_for_recovery(
+            "target/debug/test"
+        ));
 
         assert!(FileFreshnessService::is_valid_for_recovery("src/main.rs"));
         assert!(FileFreshnessService::is_valid_for_recovery("README.md"));

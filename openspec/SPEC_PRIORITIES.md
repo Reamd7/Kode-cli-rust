@@ -14,7 +14,7 @@
 > - **archive phase**: When verifying if a change can be safely archived
 > - **proposal phase**: When evaluating priorities and dependencies for new changes
 
-最后更新 / Last Updated: 2025-12-25
+最后更新 / Last Updated: 2025-12-28
 
 ## 📊 当前状态 / Current Status
 
@@ -24,7 +24,7 @@
 | agent-system | P1 | ✅ 已完成 | 2025-12-24-implement-agent-system | Agent 系统 |
 | message-model | P0 | ✅ 已完成 | 2025-12-24-implement-message-model, 2025-12-25-implement-context-management | 消息与模型抽象 |
 | tool-system | P1 | ⬜ 未开始 | implement-tool-system | 工具系统 |
-| anthropic-service | P1 | ⬜ 未开始 | implement-anthropic-service | Anthropic 服务 |
+| anthropic-service | P1 | ✅ 已完成 | 2025-12-28-implement-anthropic-service | Anthropic 服务 |
 | openai-service | P1 | ⬜ 未开始 | implement-openai-service | OpenAI 服务 |
 | cli-commands | P2 | ⬜ 未开始 | implement-cli-commands-full | CLI 命令 |
 | basic-cli | P2 | ⬜ 未开始 | implement-basic-cli | 基础 CLI |
@@ -39,12 +39,11 @@
 |-----------|--------|-----------|----------|------|
 | **P1 - 核心服务** |
 | implement-file-tools | P1 | 无 | ✅ Ready | Tool trait + ToolRegistry + Read/Write/Edit |
-| implement-anthropic-service | P1 | message-model ✅ | ✅ Ready | Anthropic API 客户端 |
 | implement-openai-service | P1 | message-model ✅ | ✅ Ready | OpenAI 兼容服务 |
 | implement-bash-tool | P1 | tool-system ⬜ | 🔴 Blocked | Bash 工具 |
 | implement-search-tools | P1 | tool-system ⬜ | 🔴 Blocked | Grep + Glob 工具 |
 | implement-task-tool | P1 | tool-system ⬜, agent-system ✅ | 🔴 Blocked | 任务委托工具 |
-| implement-streaming-response | P1 | anthropic-service ⬜ | 🔴 Blocked | 流式响应 SSE |
+| implement-streaming-response | P1 | anthropic-service ✅ | ✅ Ready | 流式响应 SSE |
 | **P2 - 用户界面** |
 | implement-basic-cli | P2 | P1 功能 ⬜ | 🔴 Blocked | 基础 CLI (run, config, agents) |
 | implement-tui-interface | P2 | P1 功能 ⬜ | 🔴 Blocked | Ratatui 交互界面 |
@@ -104,7 +103,8 @@
   - `AgentStorage` (数据持久化)
 - **参考实现**: `/Users/gemini/Documents/backup/Kode-cli/src/utils/agents.ts`
 
-#### 4. anthropic-service (Anthropic 服务) - **⬜ 未开始**
+#### 4. anthropic-service (Anthropic 服务) - **✅ 已完成**
+- **状态**: 已归档为 `2025-12-28-implement-anthropic-service`
 - **依赖关系**: 依赖 message-model
 - **实现原因**:
   - Anthropic Claude 是主要模型提供商
@@ -201,7 +201,7 @@ config-loading (P0) ✅ 已完成 / Completed
     ↓
 message-model (P0) ✅ 已完成 / Completed
     ↓
-    ├─→ anthropic-service (P1) ⬜ 未开始 / Not Started
+    ├─→ anthropic-service (P1) ✅ 已完成 / Completed
     ├─→ openai-service (P1) ⬜ 未开始 / Not Started
     ├─→ agent-system (P1) ✅ 已完成 / Completed
     └─→ tool-system (P1) ⬜ 未开始 / Not Started
@@ -238,7 +238,7 @@ openspec show <spec-id>
 ### 阶段 2: 核心服务 (Core Services)
 **目标**: 实现基本的 AI 对话能力
 - ✅ agent-system (P1) - **已完成**
-- ⬜ anthropic-service (P1)
+- ✅ anthropic-service (P1) - **已完成**
 - ⬜ openai-service (P1)
 - ⬜ tool-system (P1)
 

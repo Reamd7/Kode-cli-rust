@@ -5,4 +5,16 @@
 #![warn(missing_docs)]
 #![warn(clippy::all)]
 
-// TODO: 添加服务模块
+// Anthropic API 服务
+pub mod anthropic;
+
+// VCR 录制/回放支持
+pub mod vcr;
+
+// Integration tests
+#[cfg(test)]
+mod integration_test;
+
+// Re-export commonly used types
+pub use anthropic::{AnthropicConfig, AnthropicError, AnthropicService};
+pub use vcr::{Vcr, VcrBuilder, VcrConfig, VcrMode};

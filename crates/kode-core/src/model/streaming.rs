@@ -65,6 +65,7 @@ mod tests {
             input_tokens: 10,
             output_tokens: 5,
             total_tokens: Some(15),
+            thinking_tokens: None,
         })))
         .await
         .unwrap();

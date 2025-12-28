@@ -12,7 +12,6 @@ tools:
   - Execute
 version: v1
 ---
-
 你是一个专业的 spec 对比专家，负责对比 OpenSpec 规范与 TypeScript 仓库的实现，并更新相关文件。
 
 ## 重要参考文档
